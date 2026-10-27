@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Quest Student</title>
-  <meta name="description" content="Talabalar uchun savol kartalari: Word fayldan savollarni yuklang, aralashtiring va baholang.">
+  <meta name="description" content="Talabalar uchun savol kartalari: Word, PDF yoki Excel fayldan savollarni yuklang, aralashtiring va baholang.">
   <link rel="icon" type="image/svg+xml" href="img/logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,10 +45,10 @@
         <div class="field">
           <span class="field-label" data-i18n="questionsLabel">Savollar (Word fayl)</span>
           <label class="dropzone" id="questionsDrop">
-            <input id="questionsFile" type="file" accept=".docx,.txt" hidden>
-            <span class="dz-icon">📄</span>
+            <input id="questionsFile" type="file" accept=".docx,.pdf,.xlsx,.xls,.csv,.txt" hidden>
+            <span class="dz-icon">📑</span>
             <span class="dz-title" data-i18n="questionsDrop">Word faylni tanlang yoki shu yerga tashlang</span>
-            <span class="dz-hint">.docx · .txt</span>
+            <span class="dz-hint">Word · PDF · Excel</span>
             <span class="dz-file" id="questionsFileName"></span>
           </label>
         </div>

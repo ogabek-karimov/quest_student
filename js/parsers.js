@@ -129,10 +129,123 @@
     return groupQuestions(htmlToBlocks(html));
   }
 
+  // ---------- PDF ----------
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("cannot load " + src));
+      document.head.appendChild(s);
+    });
+  }
+
+  // pdf.js is large, so it is loaded only when a PDF is actually opened.
+  async function getPdfjs() {
+    if (!window.pdfjsLib) await loadScript("vendor/pdf.min.js");
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "vendor/pdf.worker.min.js";
+    return window.pdfjsLib;
+  }
+
+  const OPTION_RE = /^\s*[A-Fa-fА-Еа-е]\s*[).]\s+/;
+
+  // Rebuild paragraphs from positioned text: a new paragraph starts after a
+  // larger vertical gap, or when a line starts with a question number / answer option.
+  async function pdfToParagraphs(file) {
+    const pdfjs = await getPdfjs();
+    const pdf = await pdfjs.getDocument({ data: await readArrayBuffer(file) }).promise;
+    const paras = [];
+    for (let n = 1; n <= pdf.numPages; n++) {
+      const page = await pdf.getPage(n);
+      const content = await page.getTextContent();
+      const lines = [];
+      for (const it of content.items) {
+        if (!it.str) continue;
+        const y = it.transform[5], h = Math.abs(it.transform[3]) || it.height || 10;
+        let line = lines.find(l => Math.abs(l.y - y) < h * 0.5);
+        if (!line) { line = { y, h, parts: [] }; lines.push(line); }
+        line.parts.push({ x: it.transform[4], str: it.str });
+      }
+      lines.sort((a, b) => b.y - a.y);
+      let prev = null;
+      for (const l of lines) {
+        const text = normText(l.parts.sort((a, b) => a.x - b.x).map(p => p.str).join(" ").replace(/\s+/g, " "));
+        if (!text || /^\d{1,4}$/.test(text) && (l === lines[lines.length - 1] || l === lines[0])) { continue; } // page numbers
+        const gap = prev ? prev.y - l.y : Infinity;
+        const startsNew = !paras.length || gap > l.h * 1.9 || isManualStart(text) || OPTION_RE.test(text) || n !== prev.page;
+        if (startsNew) paras.push(text);
+        else paras[paras.length - 1] += " " + text;
+        prev = { y: l.y, page: n };
+      }
+    }
+    return paras;
+  }
+
+  // ---------- Excel ----------
+  const Q_HEADER_RE = /(savol|question|вопрос|topshiriq|task|matn|text)/i;
+  const OPT_HEADER_RE = /^\s*(variant|option|вариант)?\s*[A-Fa-fА-Еа-е]\s*\)?\s*$|variant|option|вариант/i;
+  const ANSWER_HEADER_RE = /(to['ʻ`’]?g['ʻ`’]?ri|correct|answer|javob\s*kaliti|key|правильн|ответ)/i;
+
+  function rowsToQuestions(rows) {
+    rows = rows.map(r => (Array.isArray(r) ? r : [r]).map(c => normText(c)));
+    rows = rows.filter(r => r.some(Boolean));
+    if (!rows.length) return [];
+    let qCol = -1, optCols = [], start = 0;
+    for (let i = 0; i < Math.min(rows.length, 10) && qCol < 0; i++) {
+      const r = rows[i];
+      if (r.filter(Boolean).length < 2) continue; // a title line, not a table header
+      const idx = r.findIndex(c => c && c.length < 40 && Q_HEADER_RE.test(c) && !ANSWER_HEADER_RE.test(c));
+      if (idx >= 0) {
+        qCol = idx; start = i + 1;
+        // answer options are shown, the correct-answer column is never shown to students
+        optCols = r.map((c, j) => j).filter(j => j !== qCol && r[j] && OPT_HEADER_RE.test(r[j]) && !ANSWER_HEADER_RE.test(r[j]));
+      }
+    }
+    if (qCol < 0) {
+      // no header: the column with the most text holds the questions
+      const width = Math.max(...rows.map(r => r.length));
+      let best = -1;
+      for (let c = 0; c < width; c++) {
+        const len = rows.reduce((a, r) => a + (/\p{L}/u.test(r[c] || "") ? (r[c] || "").length : 0), 0);
+        if (len > best) { best = len; qCol = c; }
+      }
+    }
+    const out = [];
+    for (const r of rows.slice(start)) {
+      const q = (r[qCol] || "").replace(WORD_NUM_RE, "").replace(NUM_RE, "").trim();
+      if (!q) continue;
+      let html = "<p>" + escapeHtml(q) + "</p>";
+      const opts = optCols.filter(j => r[j]).map(j => {
+        const label = rows[start - 1][j].trim();
+        const short = /^[A-Za-zА-Яа-я]$/.test(label) ? label + ") " : "";
+        return "<p>" + escapeHtml(short + r[j]) + "</p>";
+      });
+      html += opts.join("");
+      out.push({ html, text: normText([q].concat(optCols.map(j => r[j] || "")).join(" ")) });
+    }
+    return out;
+  }
+
+  async function excelToQuestions(file) {
+    if (!window.XLSX) throw new Error("xlsx not loaded");
+    const wb = window.XLSX.read(await readArrayBuffer(file), { type: "array" });
+    for (const name of wb.SheetNames) {
+      const rows = window.XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: "", raw: false });
+      const qs = rowsToQuestions(rows);
+      if (qs.length) return qs;
+    }
+    return [];
+  }
+
   async function parseQuestions(file) {
     const e = ext(file);
     if (e === "docx") return groupQuestions(htmlToBlocks(await docxToHtml(file)));
     if (e === "txt") return textToQuestions(await readText(file));
+    if (e === "pdf") {
+      const html = (await pdfToParagraphs(file)).map(p => "<p>" + escapeHtml(p) + "</p>").join("");
+      return groupQuestions(htmlToBlocks(html));
+    }
+    if (["xlsx", "xls", "csv", "ods"].includes(e)) return excelToQuestions(file);
     throw new Error("unsupported");
   }
 

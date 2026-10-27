@@ -3,7 +3,7 @@
 Talabalar uchun savol kartalari. Ustoz Word fayldan savollarni yuklaydi, har bir savol uchun raqamli karta paydo bo'ladi, talabalar raqam tanlaydi va ustoz javobni baholaydi.
 
 ## Imkoniyatlar
-- **Savollar** Word (`.docx`) yoki `.txt` fayldan yuklanadi, 200 tagacha savol uchun kartalar avtomatik kichrayadi
+- **Savollar** Word (`.docx`), PDF, Excel (`.xlsx`, `.xls`, `.csv`) yoki `.txt` fayldan yuklanadi; 200 tagacha savol uchun kartalar avtomatik kichrayadi
 - **Talabalar ro'yxati** (ixtiyoriy): Excel (`.xlsx`, `.xls`, `.csv`) yoki Word fayldan
 - **Start** bosilgandan keyin ekranda faqat kartalar qoladi; tanlangan karta qayta tanlanmaydi
 - **Aralashtirish** savollarni kartalar bo'yicha qaytadan aralashtiradi va hamma kartani yana ochiq qiladi
@@ -15,7 +15,11 @@ Talabalar uchun savol kartalari. Ustoz Word fayldan savollarni yuklaydi, har bir
 - Fayllar faqat brauzerda qayta ishlanadi, hech qayerga yuborilmaydi
 
 ## Savollar fayli formati
-Har bir savol raqam bilan boshlanadi (`1.`, `2)`, ...) yoki Word'ning avtomatik raqamlangan ro'yxatida bo'ladi. Raqam bo'lmasa, har bir paragraf alohida savol hisoblanadi. Namunalar: `samples/` papkasida.
+- **Word / PDF / txt:** har bir savol raqam bilan boshlanadi (`1.`, `2)`, ...) yoki Word'ning avtomatik raqamlangan ro'yxatida bo'ladi. Raqam bo'lmasa, har bir paragraf alohida savol hisoblanadi. Savol ostidagi `A)`, `B)` variantlar savolga qo'shiladi.
+- **Excel:** har bir qatorda bitta savol. Jadval sarlavhasida `Savol` / `Question` ustuni bo'lsa, o'sha ustun olinadi; `A`, `B`, `C`, `D` ustunlari variant sifatida qo'shiladi, `To'g'ri javob` ustuni talabalarga ko'rsatilmaydi. Sarlavha bo'lmasa, eng ko'p matnli ustun olinadi.
+- Skaner qilingan (rasm ko'rinishidagi) PDF'dan matn o'qib bo'lmaydi.
+
+Namunalar: `samples/` papkasida.
 
 ## GitHub Pages'da ishga tushirish (bepul)
 1. Repozitoriy **Settings → Pages** bo'limiga kiring
