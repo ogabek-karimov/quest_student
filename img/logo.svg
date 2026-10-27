@@ -1,20 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#2d5499"/>
-      <stop offset="1" stop-color="#132a52"/>
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dde6f4"/>
     </linearGradient>
     <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f1d58a"/>
-      <stop offset="1" stop-color="#c19a3f"/>
+      <stop offset="0" stop-color="#f3d27a"/>
+      <stop offset="1" stop-color="#b8892a"/>
+    </linearGradient>
+    <linearGradient id="cap" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b2f3a"/>
+      <stop offset="1" stop-color="#0d0f14"/>
     </linearGradient>
   </defs>
-  <rect x="1.5" y="1.5" width="61" height="61" rx="16" fill="url(#bg)" stroke="url(#gold)" stroke-width="2"/>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="16" fill="url(#bg)" stroke="#1f3c72" stroke-width="2.5"/>
   <!-- cap base -->
-  <path d="M18 31v9.5c0 3.6 6.3 6.5 14 6.5s14-2.9 14-6.5V31l-14 6.3z" fill="#dce5f4"/>
+  <path d="M18 31v9.5c0 3.6 6.3 6.5 14 6.5s14-2.9 14-6.5V31l-14 6.3z" fill="url(#cap)"/>
   <!-- board -->
-  <path d="M32 14 55 24.5 32 35 9 24.5z" fill="#ffffff"/>
-  <path d="M32 35 55 24.5v1.6L32 36.6 9 26.1v-1.6z" fill="#b9c7e2"/>
+  <path d="M32 14 55 24.5 32 35 9 24.5z" fill="#1c1f27"/>
+  <path d="M32 15.6 51.6 24.5 32 33.4 12.4 24.5z" fill="#2c303b"/>
+  <path d="M32 35 55 24.5v1.6L32 36.6 9 26.1v-1.6z" fill="#07080b"/>
   <!-- tassel -->
   <path d="M32 24.5 48.5 28.2V41" fill="none" stroke="url(#gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
   <circle cx="32" cy="24.5" r="2.3" fill="url(#gold)"/>
