@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
   <div class="bg-blobs" aria-hidden="true">
@@ -43,13 +43,25 @@
         </div>
 
         <div class="field">
-          <span class="field-label" data-i18n="questionsLabel">Savollar (Word fayl)</span>
+          <span class="field-label" data-i18n="questionsLabel">Savollar fayli</span>
           <label class="dropzone" id="questionsDrop">
             <input id="questionsFile" type="file" accept=".docx,.pdf,.xlsx,.xls,.csv,.txt" hidden>
-            <span class="dz-icon">📑</span>
-            <span class="dz-title" data-i18n="questionsDrop">Word faylni tanlang yoki shu yerga tashlang</span>
-            <span class="dz-hint">Word · PDF · Excel</span>
-            <span class="dz-file" id="questionsFileName"></span>
+            <span class="dz-empty">
+              <span class="dz-icon">📑</span>
+              <span class="dz-title" data-i18n="questionsDrop">Faylni tanlang yoki shu yerga tashlang</span>
+              <span class="dz-hint">Word · PDF · Excel</span>
+            </span>
+            <span class="dz-loaded">
+              <span class="dz-ok">✔</span>
+              <span class="dz-info">
+                <span class="dz-name" id="questionsFileName"></span>
+                <span class="dz-meta" id="questionsFileMeta"></span>
+              </span>
+              <span class="dz-actions">
+                <button type="button" class="btn btn-sm btn-ghost" data-replace="questionsFile">🔄 <span data-i18n="replace">Almashtirish</span></button>
+                <button type="button" class="btn btn-sm btn-danger" data-remove="questions">🗑 <span data-i18n="remove">O'chirish</span></button>
+              </span>
+            </span>
           </label>
         </div>
 
@@ -57,10 +69,22 @@
           <span class="field-label"><span data-i18n="studentsLabel">Talabalar ro'yxati</span> <em data-i18n="optional">(ixtiyoriy)</em></span>
           <label class="dropzone alt" id="studentsDrop">
             <input id="studentsFile" type="file" accept=".xlsx,.xls,.csv,.docx,.txt" hidden>
-            <span class="dz-icon">👥</span>
-            <span class="dz-title" data-i18n="studentsDrop">Excel yoki Word faylni tanlang</span>
-            <span class="dz-hint">.xlsx · .xls · .csv · .docx</span>
-            <span class="dz-file" id="studentsFileName"></span>
+            <span class="dz-empty">
+              <span class="dz-icon">👥</span>
+              <span class="dz-title" data-i18n="studentsDrop">Excel yoki Word faylni tanlang</span>
+              <span class="dz-hint">Excel · Word</span>
+            </span>
+            <span class="dz-loaded">
+              <span class="dz-ok">✔</span>
+              <span class="dz-info">
+                <span class="dz-name" id="studentsFileName"></span>
+                <span class="dz-meta" id="studentsFileMeta"></span>
+              </span>
+              <span class="dz-actions">
+                <button type="button" class="btn btn-sm btn-ghost" data-replace="studentsFile">🔄 <span data-i18n="replace">Almashtirish</span></button>
+                <button type="button" class="btn btn-sm btn-danger" data-remove="students">🗑 <span data-i18n="remove">O'chirish</span></button>
+              </span>
+            </span>
           </label>
         </div>
 
@@ -235,8 +259,8 @@
 
   <script src="vendor/mammoth.browser.min.js"></script>
   <script src="vendor/xlsx.full.min.js"></script>
-  <script src="js/i18n.js"></script>
-  <script src="js/parsers.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/i18n.js?v=7"></script>
+  <script src="js/parsers.js?v=7"></script>
+  <script src="js/app.js?v=7"></script>
 </body>
 </html>

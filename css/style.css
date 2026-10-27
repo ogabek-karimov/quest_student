@@ -165,7 +165,22 @@ button { font-family: inherit; }
 .dropzone:hover .dz-icon { transform: scale(1.1); }
 .dz-title { font-weight: 600; font-size: 0.92rem; }
 .dz-hint { font-size: 0.78rem; color: var(--muted); }
-.dz-file { font-size: 0.84rem; color: var(--excellent); font-weight: 600; word-break: break-all; }
+.dz-empty { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.dz-loaded { display: none; width: 100%; align-items: center; gap: 12px; flex-wrap: wrap; text-align: left; }
+.dropzone.loaded { cursor: default; padding: 14px; }
+.dropzone.loaded .dz-empty { display: none; }
+.dropzone.loaded .dz-loaded { display: flex; }
+.dropzone.loaded:hover { transform: none; box-shadow: none; border-color: var(--excellent); background: var(--excellent-soft); }
+.dropzone.loaded.drag { border-color: var(--navy); background: var(--navy-soft); }
+.dz-ok {
+  flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center;
+  background: var(--excellent); color: #fff; font-weight: 700;
+}
+.dz-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.dz-name { font-weight: 600; font-size: 0.9rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dz-meta { font-size: 0.8rem; color: var(--excellent); font-weight: 600; }
+.dz-actions { display: flex; gap: 8px; width: 100%; }
+.dz-actions .btn { flex: 1; }
 .start-hint { margin: -6px 0 0; text-align: center; color: var(--muted); font-size: 0.84rem; }
 
 /* questions per student */

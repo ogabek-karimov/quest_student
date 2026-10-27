@@ -104,7 +104,8 @@
     $("#qCount").textContent = n;
     $("#previewEmpty").hidden = n > 0;
     $("#clearQuestions").hidden = n === 0;
-    $("#questionsFileName").textContent = state.questionsFile ? "✔ " + state.questionsFile : "";
+    $("#questionsFileName").textContent = state.questionsFile;
+    $("#questionsFileMeta").textContent = n ? t("questionsLoaded", { n }) : "";
     $("#questionsDrop").classList.toggle("loaded", n > 0);
 
     const grid = $("#previewGrid");
@@ -118,7 +119,8 @@
     const s = state.students.length;
     $("#studentsPanel").hidden = s === 0;
     $("#sCount").textContent = s;
-    $("#studentsFileName").textContent = state.studentsFile ? "✔ " + state.studentsFile : "";
+    $("#studentsFileName").textContent = state.studentsFile;
+    $("#studentsFileMeta").textContent = s ? t("studentsLoaded", { n: s }) : "";
     $("#studentsDrop").classList.toggle("loaded", s > 0);
     $("#perStudentField").hidden = s === 0;
     $("#perStudentInput").value = state.perStudent;
@@ -575,8 +577,19 @@
     $("#teacherName").addEventListener("input", e => { state.teacher = e.target.value; save(); });
     setupDropzone($("#questionsDrop"), $("#questionsFile"), handleQuestionsFile);
     setupDropzone($("#studentsDrop"), $("#studentsFile"), handleStudentsFile);
-    $("#clearQuestions").addEventListener("click", () => { state.questions = []; state.questionsFile = ""; state.game = null; renderSetup(); save(); });
-    $("#clearStudents").addEventListener("click", () => { state.students = []; state.studentsFile = ""; state.game = null; renderSetup(); save(); });
+    const clearQuestions = () => { state.questions = []; state.questionsFile = ""; state.game = null; renderSetup(); save(); };
+    const clearStudents = () => { state.students = []; state.studentsFile = ""; state.game = null; renderSetup(); save(); };
+    $("#clearQuestions").addEventListener("click", clearQuestions);
+    $("#clearStudents").addEventListener("click", clearStudents);
+    // buttons live inside the dropzone <label>, so they must not trigger its file picker themselves
+    $$("[data-replace]").forEach(b => b.addEventListener("click", e => {
+      e.preventDefault(); e.stopPropagation();
+      $("#" + b.dataset.replace).click();
+    }));
+    $$("[data-remove]").forEach(b => b.addEventListener("click", e => {
+      e.preventDefault(); e.stopPropagation();
+      (b.dataset.remove === "questions" ? clearQuestions : clearStudents)();
+    }));
     $("#startBtn").addEventListener("click", startGame);
     $("#psMinus").addEventListener("click", () => setPerStudent(state.perStudent - 1));
     $("#psPlus").addEventListener("click", () => setPerStudent(state.perStudent + 1));
