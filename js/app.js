@@ -15,6 +15,7 @@
   const state = {
     lang: "uz",
     teacher: "",
+    perStudent: 1,      // how many questions each student answers
     questions: [],      // [{html, text}]
     questionsFile: "",
     students: [],       // [{id, name}]
@@ -119,6 +120,10 @@
     $("#sCount").textContent = s;
     $("#studentsFileName").textContent = state.studentsFile ? "✔ " + state.studentsFile : "";
     $("#studentsDrop").classList.toggle("loaded", s > 0);
+    $("#perStudentField").hidden = s === 0;
+    $("#perStudentInput").value = state.perStudent;
+    $("#psMinus").disabled = state.perStudent <= 1;
+    $("#psPlus").disabled = state.perStudent >= 20;
     $("#studentsPreview").innerHTML = state.students.map(st => `<li>${esc(st.name)}</li>`).join("");
     document.querySelector(".setup-layout").classList.toggle("with-students", s > 0);
 
@@ -202,6 +207,14 @@
 
   function studentById(id) { return state.students.find(s => s.id === id); }
   function resultsOf(id) { return state.game.results.filter(r => r.studentId === id); }
+  function limit() { return Math.max(1, state.perStudent || 1); }
+  function isFull(id) { return resultsOf(id).length >= limit(); }
+
+  function setPerStudent(v) {
+    state.perStudent = Math.min(20, Math.max(1, parseInt(v, 10) || 1));
+    renderSetup();
+    save();
+  }
 
   function renderGame(deal) {
     const g = state.game;
@@ -243,7 +256,10 @@
     let hint;
     if (usedCount === state.questions.length) hint = t("hintAllOpened");
     else if (!hasStudents) hint = t("hintNoStudents");
-    else if (g.selected) hint = t("hintPickCard", { name: (studentById(g.selected) || {}).name || "" });
+    else if (g.selected) {
+      const name = (studentById(g.selected) || {}).name || "";
+      hint = t("hintPickCard", { name: limit() > 1 ? `${name} (${resultsOf(g.selected).length + 1}/${limit()})` : name });
+    }
     else hint = t("hintPickStudent");
     $("#boardHint").textContent = hint;
     $("#boardHint").classList.toggle("ready", !!g.selected || !hasStudents);
@@ -262,11 +278,12 @@
         const rs = resultsOf(s.id);
         const chips = rs.map(r => `<span class="chip ${GRADES[r.grade].cls}" title="${esc(t(r.grade))} · №${r.card + 1}">${GRADES[r.grade].icon}</span>`).join("");
         const idx = state.students.indexOf(s) + 1;
+        const count = limit() > 1 ? `<span class="r-count">${rs.length}/${limit()}</span>` : "";
         return `<li>
-          <button class="roster-item ${g.selected === s.id ? "selected" : ""} ${rs.length ? "done" : ""}" data-student="${s.id}">
+          <button class="roster-item ${g.selected === s.id ? "selected" : ""} ${rs.length ? "done" : ""} ${rs.length >= limit() ? "full" : ""}" data-student="${s.id}">
             <span class="r-idx">${idx}</span>
             <span class="r-name">${esc(s.name)}</span>
-            <span class="r-chips">${chips}</span>
+            <span class="r-chips">${chips}${count}</span>
           </button>
         </li>`;
       }).join("");
@@ -274,6 +291,9 @@
 
   function selectStudent(id) {
     const g = state.game;
+    if (g.selected !== id && isFull(id)) {
+      return toast(t("limitReached", { name: studentById(id).name, n: limit() }), "error");
+    }
     g.selected = g.selected === id ? null : id;
     renderGame();
     save();
@@ -281,9 +301,8 @@
 
   function randomStudent() {
     const g = state.game;
-    const answered = new Set(g.results.map(r => r.studentId));
-    let pool = state.students.filter(s => !answered.has(s.id));
-    if (!pool.length) pool = state.students;
+    const pool = state.students.filter(s => !isFull(s.id));
+    if (!pool.length) return toast(t("allDone"), "info");
     const pick = pool[Math.floor(Math.random() * pool.length)];
     g.selected = pick.id;
     renderGame();
@@ -321,6 +340,9 @@
     $("#qModalNum2").textContent = cur.card + 1;
     $("#qModalNumber").className = "q-number " + cardColor(cur.card);
     $("#qModalStudent").textContent = st ? "👤 " + st.name : "";
+    const showProgress = !!st && limit() > 1;
+    $("#qProgress").hidden = !showProgress;
+    if (showProgress) $("#qProgress").textContent = `${resultsOf(st.id).length + 1}/${limit()}`;
     $("#qModalBody").innerHTML = q ? q.html : "";
     $("#gradeRow").hidden = !st;
     $("#qModalFoot").hidden = !!st;
@@ -340,7 +362,8 @@
     });
     g.used[cur.card] = { studentId: st.id, grade };
     g.current = null;
-    g.selected = null;
+    // the student keeps the turn until they have answered `perStudent` questions
+    if (isFull(st.id)) g.selected = null;
     closeModal("#questionModal");
     renderGame();
     save();
@@ -429,7 +452,7 @@
       [t("reportTitle") + " — Quest Student"],
       [t("rTeacher"), state.teacher],
       [t("rDate"), fmtDate(now)],
-      [t("questionsPreview"), state.questions.length, t("rounds"), g.round],
+      [t("questionsPreview"), state.questions.length, t("rounds"), g.round, t("rPerStudent"), limit()],
       []
     ];
     const summaryHeader = ["№", t("student"), t("questionNo"), t("grade"), t("rAvg"), t("rCountExcellent"), t("rCountGood"), t("rCountBad")];
@@ -555,6 +578,9 @@
     $("#clearQuestions").addEventListener("click", () => { state.questions = []; state.questionsFile = ""; state.game = null; renderSetup(); save(); });
     $("#clearStudents").addEventListener("click", () => { state.students = []; state.studentsFile = ""; state.game = null; renderSetup(); save(); });
     $("#startBtn").addEventListener("click", startGame);
+    $("#psMinus").addEventListener("click", () => setPerStudent(state.perStudent - 1));
+    $("#psPlus").addEventListener("click", () => setPerStudent(state.perStudent + 1));
+    $("#perStudentInput").addEventListener("change", e => setPerStudent(e.target.value));
 
     $("#gameGrid").addEventListener("click", e => {
       const btn = e.target.closest("[data-card]");

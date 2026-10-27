@@ -8,7 +8,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -62,6 +62,18 @@
             <span class="dz-hint">.xlsx · .xls · .csv · .docx</span>
             <span class="dz-file" id="studentsFileName"></span>
           </label>
+        </div>
+
+        <div class="per-student" id="perStudentField" hidden>
+          <div class="ps-text">
+            <span data-i18n="perStudent">Har bir talaba nechta savol tanlaydi</span>
+            <small data-i18n="perStudentHint">Talaba shuncha savolga javob bergach, navbat keyingisiga o'tadi</small>
+          </div>
+          <div class="stepper">
+            <button type="button" id="psMinus" aria-label="−">−</button>
+            <input id="perStudentInput" type="number" min="1" max="20" value="1" inputmode="numeric">
+            <button type="button" id="psPlus" aria-label="+">+</button>
+          </div>
         </div>
 
         <button id="startBtn" class="btn btn-primary btn-lg" disabled>
@@ -152,7 +164,7 @@
       <div class="modal-head">
         <div class="q-number" id="qModalNumber">1</div>
         <div>
-          <h3 id="qModalTitle"><span data-i18n="question">Savol</span> № <span id="qModalNum2"></span></h3>
+          <h3 id="qModalTitle"><span data-i18n="question">Savol</span> № <span id="qModalNum2"></span><span class="q-progress" id="qProgress" hidden></span></h3>
           <p class="q-student" id="qModalStudent"></p>
         </div>
         <button class="speak-btn" id="speakBtn" type="button" data-i18n-title="listen" title="Ovozli tinglash">
