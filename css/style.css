@@ -226,9 +226,7 @@ button { font-family: inherit; }
 }
 .support:hover { transform: translateY(-2px); border-color: #229ED9; box-shadow: 0 10px 22px rgba(34, 158, 217, 0.25); }
 .tg-icon { width: 32px; height: 32px; flex: none; }
-.support-text { display: flex; flex-direction: column; line-height: 1.2; }
-.support-text small { color: var(--muted); font-size: 0.74rem; }
-.support-text b { color: #1c8ac0; font-size: 0.9rem; font-weight: 600; }
+.support-text { color: #1c8ac0; font-size: 0.9rem; font-weight: 600; }
 @media (max-width: 860px) {
   .foot { flex-direction: column; justify-content: center; padding: 14px 16px; }
   .foot-text { text-align: center; }
