@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=7">
+  <link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body>
   <div class="bg-blobs" aria-hidden="true">
@@ -197,6 +197,10 @@
           <h3 id="qModalTitle"><span data-i18n="question">Savol</span> № <span id="qModalNum2"></span><span class="q-progress" id="qProgress" hidden></span></h3>
           <p class="q-student" id="qModalStudent"></p>
         </div>
+        <div class="zoom" role="group" aria-label="Text size">
+          <button type="button" class="zoom-btn" id="zoomOut" data-i18n-title="smaller" title="Kichikroq">A−</button>
+          <button type="button" class="zoom-btn" id="zoomIn" data-i18n-title="bigger" title="Kattaroq">A+</button>
+        </div>
         <button class="speak-btn" id="speakBtn" type="button" data-i18n-title="listen" title="Ovozli tinglash">
           <span class="speak-icon">🔊</span>
           <span class="speak-waves" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
@@ -259,8 +263,8 @@
 
   <script src="vendor/mammoth.browser.min.js"></script>
   <script src="vendor/xlsx.full.min.js"></script>
-  <script src="js/i18n.js?v=7"></script>
+  <script src="js/i18n.js?v=8"></script>
   <script src="js/parsers.js?v=7"></script>
-  <script src="js/app.js?v=7"></script>
+  <script src="js/app.js?v=8"></script>
 </body>
 </html>

@@ -16,6 +16,7 @@
     lang: "uz",
     teacher: "",
     perStudent: 1,      // how many questions each student answers
+    textScale: 1,       // question text size in the modal, set by the teacher
     questions: [],      // [{html, text}]
     questionsFile: "",
     students: [],       // [{id, name}]
@@ -332,6 +333,18 @@
     setTimeout(() => { showQuestion(); renderGame(); }, btn ? 380 : 0);
   }
 
+  function applyTextScale() {
+    $("#questionModal").style.setProperty("--qscale", state.textScale);
+    $("#zoomOut").disabled = state.textScale <= 0.7;
+    $("#zoomIn").disabled = state.textScale >= 1.6;
+  }
+
+  function zoom(delta) {
+    state.textScale = Math.round(Math.min(1.6, Math.max(0.7, (state.textScale || 1) + delta)) * 10) / 10;
+    applyTextScale();
+    save();
+  }
+
   function showQuestion() {
     const g = state.game;
     const cur = g.current;
@@ -622,6 +635,9 @@
     $("#downloadReport").addEventListener("click", downloadReport);
     $("#newSession").addEventListener("click", newSession);
     $("#speakBtn").addEventListener("click", speakQuestion);
+    $("#zoomOut").addEventListener("click", () => zoom(-0.1));
+    $("#zoomIn").addEventListener("click", () => zoom(0.1));
+    applyTextScale();
     if (synth && synth.onvoiceschanged !== undefined) synth.onvoiceschanged = () => synth.getVoices();
     $$(".grade-btn").forEach(b => b.addEventListener("click", () => gradeCurrent(b.dataset.grade)));
 

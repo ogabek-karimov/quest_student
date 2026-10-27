@@ -382,6 +382,7 @@ button { font-family: inherit; }
 .q-progress { display: inline-block; margin-left: 8px; padding: 2px 9px; border-radius: 999px; background: var(--navy-soft); color: var(--navy); font-size: 0.8rem; font-weight: 700; }
 .q-body {
   font-size: clamp(1.15rem, 2.2vw, 1.55rem); line-height: 1.6; padding: 22px 24px; border-radius: 14px;
+  transition: font-size 0.2s ease;
   background: var(--surface-2); border: 1px solid var(--border); border-left: 4px solid var(--navy); word-wrap: break-word; color: var(--text);
 }
 .q-body p { margin: 0 0 0.5em; }
@@ -531,4 +532,52 @@ button { font-family: inherit; }
   .modal-box { padding: 20px 16px; }
   .speak-btn { padding: 0 12px; }
   .speak-label { display: none; }
+}
+
+/* ---------- question modal: large, readable from the back of the room ---------- */
+.modal-box.question-box {
+  width: min(1240px, 95vw); min-height: min(62vh, 640px); padding: 30px 40px 32px;
+  display: flex; flex-direction: column;
+}
+#questionModal { --qscale: 1; }
+.question-box .modal-head { gap: 20px; margin-bottom: 24px; }
+.question-box .q-number { width: 92px; height: 92px; border-radius: 20px; font-size: 2.3rem; letter-spacing: -0.03em; }
+.question-box .modal-head h3 { font-size: 2rem; }
+.question-box .q-student { font-size: 1.5rem; margin-top: 6px; }
+.question-box .q-progress { font-size: 1rem; padding: 3px 12px; vertical-align: middle; }
+.question-box .q-body {
+  flex: 1; display: flex; flex-direction: column; justify-content: center;
+  font-size: calc(clamp(1.7rem, 3.3vw, 2.9rem) * var(--qscale));
+  font-weight: 500; line-height: 1.45; padding: 34px 40px; border-left-width: 6px; border-radius: 18px;
+}
+.question-box .q-body p { margin: 0 0 0.45em; }
+.question-box .q-body p:last-child { margin-bottom: 0; }
+.question-box .speak-btn { height: 52px; padding: 0 20px 0 16px; font-size: 1.1rem; border-radius: 13px; }
+.question-box .speak-icon { font-size: 1.35rem; }
+.question-box .icon-btn { width: 52px; height: 52px; border-radius: 13px; font-size: 1.2rem; }
+.question-box .grade-row { margin-top: 26px; }
+.question-box .grade-title { font-size: 1.15rem; }
+.question-box .grade-btn { padding: 22px 14px; font-size: 1.4rem; border-radius: 15px; }
+.question-box .modal-foot .btn { padding: 13px 30px; font-size: 1.1rem; }
+
+.zoom { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 13px; overflow: hidden; flex: none; background: var(--surface); }
+.zoom-btn {
+  width: 52px; height: 50px; border: 0; background: transparent; cursor: pointer;
+  font-family: "Lora", Georgia, serif; font-weight: 700; font-size: 1.15rem; color: var(--navy);
+  transition: background 0.2s, color 0.2s;
+}
+.zoom-btn + .zoom-btn { border-left: 1px solid var(--border); font-size: 1.35rem; }
+.zoom-btn:hover:not(:disabled) { background: var(--navy); color: #fff; }
+.zoom-btn:disabled { color: #c0c8d4; cursor: not-allowed; }
+
+@media (max-width: 860px) {
+  .modal-box.question-box { padding: 20px 16px; min-height: 0; }
+  .question-box .modal-head { flex-wrap: wrap; gap: 12px; }
+  .question-box .q-number { width: 64px; height: 64px; font-size: 1.8rem; }
+  .question-box .modal-head h3 { font-size: 1.4rem; }
+  .question-box .q-student { font-size: 1.1rem; }
+  .question-box .q-body { font-size: calc(1.3rem * var(--qscale)); padding: 20px; }
+  .question-box .grade-btn { font-size: 1.15rem; padding: 16px; }
+  .zoom-btn, .question-box .speak-btn, .question-box .icon-btn { height: 44px; }
+  .question-box .icon-btn { width: 44px; }
 }
