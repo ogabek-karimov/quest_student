@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quest Student</title>
+  <meta name="description" content="Talabalar uchun savol kartalari: Word fayldan savollarni yuklang, aralashtiring va baholang.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="bg-blobs" aria-hidden="true">
+    <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
+  </div>
+
+  <!-- ============ SETUP SCREEN ============ -->
+  <section id="setupScreen" class="screen active">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-logo">🎓</span>
+        <div>
+          <h1>Quest Student</h1>
+          <p data-i18n="tagline">Savollarni yuklang, aralashtiring va talabalarni baholang</p>
+        </div>
+      </div>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button class="lang-btn" data-lang="uz">UZ</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+      </div>
+    </header>
+
+    <main class="setup-layout">
+      <aside class="panel side-panel">
+        <div class="field">
+          <label for="teacherName" data-i18n="teacherLabel">Ustoz ismi</label>
+          <div class="input-wrap">
+            <span class="input-icon">👤</span>
+            <input id="teacherName" type="text" autocomplete="name" data-i18n-placeholder="teacherPh" placeholder="Ism familiyangizni kiriting">
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-i18n="questionsLabel">Savollar (Word fayl)</span>
+          <label class="dropzone" id="questionsDrop">
+            <input id="questionsFile" type="file" accept=".docx,.txt" hidden>
+            <span class="dz-icon">📄</span>
+            <span class="dz-title" data-i18n="questionsDrop">Word faylni tanlang yoki shu yerga tashlang</span>
+            <span class="dz-hint">.docx · .txt</span>
+            <span class="dz-file" id="questionsFileName"></span>
+          </label>
+        </div>
+
+        <div class="field">
+          <span class="field-label"><span data-i18n="studentsLabel">Talabalar ro'yxati</span> <em data-i18n="optional">(ixtiyoriy)</em></span>
+          <label class="dropzone alt" id="studentsDrop">
+            <input id="studentsFile" type="file" accept=".xlsx,.xls,.csv,.docx,.txt" hidden>
+            <span class="dz-icon">👥</span>
+            <span class="dz-title" data-i18n="studentsDrop">Excel yoki Word faylni tanlang</span>
+            <span class="dz-hint">.xlsx · .xls · .csv · .docx</span>
+            <span class="dz-file" id="studentsFileName"></span>
+          </label>
+        </div>
+
+        <button id="startBtn" class="btn btn-primary btn-lg" disabled>
+          <span>🚀</span> <span data-i18n="start">Start</span>
+        </button>
+        <p class="start-hint" id="startHint" data-i18n="startHint">Boshlash uchun savollar faylini yuklang</p>
+      </aside>
+
+      <section class="panel center-panel">
+        <div class="panel-head">
+          <h2><span data-i18n="questionsPreview">Savollar</span> <span class="badge" id="qCount">0</span></h2>
+          <button id="clearQuestions" class="btn btn-ghost btn-sm" hidden data-i18n="clear">Tozalash</button>
+        </div>
+        <div id="previewEmpty" class="empty-state">
+          <div class="empty-illus">🃏</div>
+          <p data-i18n="emptyQuestions">Word fayl yuklang — har bir savol uchun bitta karta paydo bo'ladi</p>
+          <p class="muted small" data-i18n="formatHint">Har bir savol alohida raqamlangan (1. 2. 3. …) bo'lishi yoki alohida paragrafda yozilishi kerak.</p>
+        </div>
+        <div id="previewGrid" class="card-grid preview"></div>
+      </section>
+
+      <aside class="panel students-panel" id="studentsPanel" hidden>
+        <div class="panel-head">
+          <h2><span data-i18n="students">Talabalar</span> <span class="badge" id="sCount">0</span></h2>
+          <button id="clearStudents" class="btn btn-ghost btn-sm" data-i18n="clear">Tozalash</button>
+        </div>
+        <ol id="studentsPreview" class="students-preview"></ol>
+      </aside>
+    </main>
+    <footer class="foot muted small">Quest Student · <span data-i18n="footer">Fayllar faqat brauzeringizda qayta ishlanadi</span></footer>
+  </section>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <section id="gameScreen" class="screen">
+    <header class="topbar game-bar">
+      <div class="brand small-brand">
+        <span class="brand-logo">🎓</span>
+        <div>
+          <h1>Quest Student</h1>
+          <p><span data-i18n="teacher">Ustoz</span>: <b id="gameTeacher"></b></p>
+        </div>
+      </div>
+      <div class="game-stats">
+        <div class="stat"><span class="stat-num" id="statOpened">0</span><span class="stat-label" data-i18n="opened">ochildi</span></div>
+        <div class="stat"><span class="stat-num" id="statLeft">0</span><span class="stat-label" data-i18n="left">qoldi</span></div>
+        <div class="stat"><span class="stat-num" id="statRound">1</span><span class="stat-label" data-i18n="round">raund</span></div>
+      </div>
+      <div class="game-actions">
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button class="lang-btn" data-lang="uz">UZ</button>
+          <button class="lang-btn" data-lang="en">EN</button>
+        </div>
+        <form id="jumpForm" class="jump" autocomplete="off">
+          <input id="jumpInput" type="number" min="1" inputmode="numeric" data-i18n-placeholder="jumpPh" placeholder="№ raqam">
+          <button type="submit" class="jump-go" aria-label="Open">➜</button>
+        </form>
+        <button id="shuffleBtn" class="btn btn-accent"><span class="spin-icon">🔀</span> <span data-i18n="shuffle">Aralashtirish</span></button>
+        <button id="reportBtnTop" class="btn btn-ghost" hidden>⬇ <span data-i18n="report">Hisobot</span></button>
+        <button id="finishBtn" class="btn btn-danger">⏹ <span data-i18n="finish">Tugatish</span></button>
+      </div>
+    </header>
+
+    <main class="game-layout" id="gameLayout">
+      <aside class="panel roster" id="roster" hidden>
+        <div class="panel-head">
+          <h2 data-i18n="students">Talabalar</h2>
+          <span class="badge" id="rosterCount">0</span>
+        </div>
+        <div class="input-wrap search">
+          <span class="input-icon">🔍</span>
+          <input id="rosterSearch" type="search" data-i18n-placeholder="search" placeholder="Qidirish…">
+        </div>
+        <button id="randomStudent" class="btn btn-ghost btn-sm full">🎲 <span data-i18n="randomStudent">Tasodifiy talaba</span></button>
+        <ul id="rosterList" class="roster-list"></ul>
+      </aside>
+
+      <section class="board">
+        <div class="board-hint" id="boardHint"></div>
+        <div id="gameGrid" class="card-grid game"></div>
+      </section>
+    </main>
+  </section>
+
+  <!-- ============ QUESTION MODAL ============ -->
+  <div class="modal" id="questionModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-box question-box" role="dialog" aria-modal="true" aria-labelledby="qModalTitle">
+      <div class="modal-head">
+        <div class="q-number" id="qModalNumber">1</div>
+        <div>
+          <h3 id="qModalTitle"><span data-i18n="question">Savol</span> № <span id="qModalNum2"></span></h3>
+          <p class="q-student" id="qModalStudent"></p>
+        </div>
+        <button class="speak-btn" id="speakBtn" type="button" data-i18n-title="listen" title="Ovozli tinglash">
+          <span class="speak-icon">🔊</span>
+          <span class="speak-waves" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span class="speak-label" data-i18n="listen">Tinglash</span>
+        </button>
+        <button class="icon-btn" data-close aria-label="Close">✕</button>
+      </div>
+      <div class="q-body" id="qModalBody"></div>
+      <div class="grade-row" id="gradeRow">
+        <p class="grade-title" data-i18n="gradeTitle">Javobni baholang:</p>
+        <div class="grade-buttons">
+          <button class="grade-btn excellent" data-grade="excellent">🌟 <span data-i18n="excellent">A'lo</span></button>
+          <button class="grade-btn good" data-grade="good">👍 <span data-i18n="good">Qoniqarli</span></button>
+          <button class="grade-btn bad" data-grade="bad">👎 <span data-i18n="bad">Yomon</span></button>
+        </div>
+      </div>
+      <div class="modal-foot" id="qModalFoot">
+        <button class="btn btn-primary" data-close data-i18n="close">Yopish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FINISH MODAL ============ -->
+  <div class="modal" id="finishModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-box finish-box" role="dialog" aria-modal="true" aria-labelledby="finishTitle">
+      <div class="modal-head">
+        <div class="q-number trophy">🏆</div>
+        <div>
+          <h3 id="finishTitle" data-i18n="finishTitle">Mashg'ulot yakunlandi</h3>
+          <p class="muted" id="finishSub"></p>
+        </div>
+        <button class="icon-btn" data-close aria-label="Close">✕</button>
+      </div>
+      <div class="summary-cards" id="summaryCards"></div>
+      <div class="table-wrap" id="resultsWrap">
+        <table class="results">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th data-i18n="student">Talaba</th>
+              <th data-i18n="questionNo">Savol №</th>
+              <th data-i18n="grade">Baho</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-foot spread">
+        <button class="btn btn-ghost" data-close data-i18n="continue">Davom etish</button>
+        <div class="foot-right">
+          <button class="btn btn-accent" id="downloadReport">⬇ <span data-i18n="downloadReport">Hisobotni yuklab olish (Excel)</span></button>
+          <button class="btn btn-danger" id="newSession" data-i18n="newSession">Yangi mashg'ulot</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toasts" aria-live="polite"></div>
+
+  <script src="vendor/mammoth.browser.min.js"></script>
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/parsers.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
