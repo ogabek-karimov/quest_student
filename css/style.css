@@ -220,12 +220,10 @@ button { font-family: inherit; }
 }
 .foot p { margin: 0; }
 .foot-note { justify-self: start; color: var(--muted); font-size: 0.8rem; }
-.foot .copyright {
-  justify-self: center; text-align: center; font-size: 0.86rem; color: var(--muted);
-  padding: 8px 18px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border);
-}
-.copyright b { color: var(--navy); font-weight: 700; }
-.foot .support { justify-self: end; }
+.foot .copyright { justify-self: center; text-align: center; font-size: 0.86rem; color: var(--muted); }
+.foot-right-group { justify-self: end; display: flex; align-items: center; gap: 18px; }
+.developer { color: var(--muted); font-size: 0.86rem; white-space: nowrap; }
+.developer b { color: var(--navy); font-weight: 700; }
 .support {
   display: inline-flex; align-items: center; gap: 10px; padding: 8px 16px 8px 9px; border-radius: 999px;
   background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-sm);
@@ -236,7 +234,8 @@ button { font-family: inherit; }
 .support-text { color: #1c8ac0; font-size: 0.9rem; font-weight: 600; }
 @media (max-width: 1000px) {
   .foot { grid-template-columns: 1fr; justify-items: center; padding: 14px 16px; }
-  .foot-note, .foot .copyright, .foot .support { justify-self: center; text-align: center; }
+  .foot-note, .foot .copyright, .foot-right-group { justify-self: center; text-align: center; }
+  .foot-right-group { flex-direction: column; gap: 10px; }
   .foot-note:empty { display: none; }
 }
 .foot p { margin: 4px 0; }
