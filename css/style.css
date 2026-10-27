@@ -215,10 +215,17 @@ button { font-family: inherit; }
 .students-preview li::marker { color: var(--muted); font-size: 0.82rem; }
 
 .foot {
-  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px;
   padding: 14px 28px 18px; margin-top: auto; border-top: 1px solid var(--border);
 }
-.foot-text { text-align: left; }
+.foot p { margin: 0; }
+.foot-note { justify-self: start; color: var(--muted); font-size: 0.8rem; }
+.foot .copyright {
+  justify-self: center; text-align: center; font-size: 0.86rem; color: var(--muted);
+  padding: 8px 18px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border);
+}
+.copyright b { color: var(--navy); font-weight: 700; }
+.foot .support { justify-self: end; }
 .support {
   display: inline-flex; align-items: center; gap: 10px; padding: 8px 16px 8px 9px; border-radius: 999px;
   background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-sm);
@@ -227,9 +234,10 @@ button { font-family: inherit; }
 .support:hover { transform: translateY(-2px); border-color: #229ED9; box-shadow: 0 10px 22px rgba(34, 158, 217, 0.25); }
 .tg-icon { width: 32px; height: 32px; flex: none; }
 .support-text { color: #1c8ac0; font-size: 0.9rem; font-weight: 600; }
-@media (max-width: 860px) {
-  .foot { flex-direction: column; justify-content: center; padding: 14px 16px; }
-  .foot-text { text-align: center; }
+@media (max-width: 1000px) {
+  .foot { grid-template-columns: 1fr; justify-items: center; padding: 14px 16px; }
+  .foot-note, .foot .copyright, .foot .support { justify-self: center; text-align: center; }
+  .foot-note:empty { display: none; }
 }
 .foot p { margin: 4px 0; }
 .copyright { color: var(--muted); font-size: 0.84rem; }
