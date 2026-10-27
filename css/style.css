@@ -566,7 +566,10 @@ button { font-family: inherit; }
   font-family: "Lora", Georgia, serif; font-weight: 700; font-size: 1.15rem; color: var(--navy);
   transition: background 0.2s, color 0.2s;
 }
-.zoom-btn + .zoom-btn { border-left: 1px solid var(--border); font-size: 1.35rem; }
+.zoom-btn + .zoom-btn { border-left: 1px solid var(--border); }
+#zoomIn { font-size: 1.35rem; }
+.zoom-reset { font-family: inherit; font-size: 1.4rem; }
+.zoom-reset.changed { background: var(--gold-soft); color: var(--gold-2); }
 .zoom-btn:hover:not(:disabled) { background: var(--navy); color: #fff; }
 .zoom-btn:disabled { color: #c0c8d4; cursor: not-allowed; }
 

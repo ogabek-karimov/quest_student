@@ -16,7 +16,6 @@
     lang: "uz",
     teacher: "",
     perStudent: 1,      // how many questions each student answers
-    textScale: 1,       // question text size in the modal, set by the teacher
     questions: [],      // [{html, text}]
     questionsFile: "",
     students: [],       // [{id, name}]
@@ -333,21 +332,27 @@
     setTimeout(() => { showQuestion(); renderGame(); }, btn ? 380 : 0);
   }
 
+  // Text size applies only to the open question; every new question starts at the standard size.
+  let textScale = 1;
+
   function applyTextScale() {
-    $("#questionModal").style.setProperty("--qscale", state.textScale);
-    $("#zoomOut").disabled = state.textScale <= 0.7;
-    $("#zoomIn").disabled = state.textScale >= 1.6;
+    $("#questionModal").style.setProperty("--qscale", textScale);
+    $("#zoomOut").disabled = textScale <= 0.7;
+    $("#zoomIn").disabled = textScale >= 1.6;
+    $("#zoomReset").disabled = textScale === 1;
+    $("#zoomReset").classList.toggle("changed", textScale !== 1);
   }
 
   function zoom(delta) {
-    state.textScale = Math.round(Math.min(1.6, Math.max(0.7, (state.textScale || 1) + delta)) * 10) / 10;
+    textScale = delta === 0 ? 1 : Math.round(Math.min(1.6, Math.max(0.7, textScale + delta)) * 10) / 10;
     applyTextScale();
-    save();
   }
 
   function showQuestion() {
     const g = state.game;
     const cur = g.current;
+    textScale = 1;
+    applyTextScale();
     if (!cur) return;
     const q = state.questions[g.order[cur.card]];
     const st = cur.studentId && studentById(cur.studentId);
@@ -637,6 +642,7 @@
     $("#speakBtn").addEventListener("click", speakQuestion);
     $("#zoomOut").addEventListener("click", () => zoom(-0.1));
     $("#zoomIn").addEventListener("click", () => zoom(0.1));
+    $("#zoomReset").addEventListener("click", () => zoom(0));
     applyTextScale();
     if (synth && synth.onvoiceschanged !== undefined) synth.onvoiceschanged = () => synth.getVoices();
     $$(".grade-btn").forEach(b => b.addEventListener("click", () => gradeCurrent(b.dataset.grade)));
