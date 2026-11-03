@@ -619,7 +619,7 @@ button { font-family: inherit; }
 .answer-btn:hover { transform: translateY(-2px); background: var(--excellent); color: #fff; box-shadow: 0 10px 22px rgba(31, 138, 76, 0.3); }
 .answer-btn.open { background: var(--surface); color: var(--muted); border-color: var(--border-strong); }
 .answer-btn.open:hover { background: var(--surface-2); color: var(--text); box-shadow: var(--shadow-sm); }
-.ab-icon { font-size: 1.2rem; }
+.ab-icon { display: inline-flex; width: 22px; height: 22px; }
 .q-answer {
   margin-top: 14px; padding: 20px 28px; border-radius: 16px;
   background: var(--excellent-soft); border: 1px solid rgba(31, 138, 76, 0.3); border-left: 6px solid var(--excellent);

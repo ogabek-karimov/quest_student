@@ -350,11 +350,14 @@
     setTimeout(updateScrollHint, 250);
   }
 
+  const EYE_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const EYE_OFF_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+
   function setAnswerBtn(open) {
     const btn = $("#answerBtn");
     btn.classList.toggle("open", open);
     btn.querySelector(".ab-label").textContent = t(open ? "hideAnswer" : "showAnswer");
-    btn.querySelector(".ab-icon").textContent = open ? "🙈" : "👁";
+    btn.querySelector(".ab-icon").innerHTML = open ? EYE_OFF_SVG : EYE_SVG;
   }
 
   function toggleAnswer() {
