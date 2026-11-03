@@ -674,3 +674,13 @@ button { font-family: inherit; }
 .fx-emoji { filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.18)); }
 .fx-confetti i { display: block; width: 9px; height: 14px; border-radius: 2px; }
 .grade-btn:active { transform: scale(0.94); }
+
+/* ---------- while a grading reaction plays ---------- */
+.grade-btn.chosen { transform: scale(1.05); color: #fff; box-shadow: 0 0 0 4px rgba(193, 154, 63, 0.35), 0 14px 30px rgba(15, 31, 61, 0.25); }
+.grade-btn.excellent.chosen { background: var(--excellent); }
+.grade-btn.good.chosen { background: var(--good); }
+.grade-btn.bad.chosen { background: var(--bad); }
+#questionModal.grading .grade-btn { pointer-events: none; }
+#questionModal.grading .grade-btn:not(.chosen) { opacity: 0.4; filter: grayscale(0.6); }
+#questionModal.grading [data-close] { pointer-events: none; opacity: 0.5; }
+.grade-btn { touch-action: manipulation; }

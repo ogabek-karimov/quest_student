@@ -418,6 +418,26 @@
     openModal("#questionModal");
   }
 
+  // Play the reaction inside the open question window, then record the grade and close it.
+  let grading = false;
+  function startGrade(btn, x, y) {
+    const g = state.game;
+    if (grading || !g || !g.current || !g.current.studentId) return;
+    grading = true;
+    const grade = btn.dataset.grade;
+    $("#questionModal").classList.add("grading");
+    btn.classList.add("chosen");
+    window.Effects.burst(x, y, grade);
+    if (state.sound !== false) window.Effects.play(grade);
+    setTimeout(() => {
+      grading = false;
+      $("#questionModal").classList.remove("grading");
+      btn.classList.remove("chosen");
+      window.Effects.clear();
+      gradeCurrent(grade);
+    }, window.Effects.DURATION);
+  }
+
   function gradeCurrent(grade) {
     const g = state.game;
     const cur = g.current;
@@ -778,6 +798,7 @@
   }
 
   function closeModal(sel) {
+    if (sel === "#questionModal" && grading) return; // wait for the grading reaction to finish
     const m = $(sel);
     m.classList.remove("open");
     m.setAttribute("aria-hidden", "true");
@@ -849,14 +870,19 @@
     window.addEventListener("resize", updateScrollHint);
     applyTextScale();
     if (synth && synth.onvoiceschanged !== undefined) synth.onvoiceschanged = () => synth.getVoices();
-    $$(".grade-btn").forEach(b => b.addEventListener("click", e => {
-      // burst from the click point (or the button centre when pressed from the keyboard)
-      const r = b.getBoundingClientRect();
-      const x = e.clientX || r.left + r.width / 2, y = e.clientY || r.top + r.height / 2;
-      window.Effects.burst(x, y, b.dataset.grade);
-      if (state.sound !== false) window.Effects.play(b.dataset.grade);
-      gradeCurrent(b.dataset.grade);
-    }));
+    $$(".grade-btn").forEach(b => {
+      // the reaction starts the moment the button is pressed down
+      b.addEventListener("pointerdown", e => {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        startGrade(b, e.clientX, e.clientY);
+      });
+      // keyboard (Enter / Space) has no pointerdown: burst from the button centre
+      b.addEventListener("click", e => {
+        if (e.detail !== 0) return;
+        const r = b.getBoundingClientRect();
+        startGrade(b, r.left + r.width / 2, r.top + r.height / 2);
+      });
+    });
     $("#soundBtn").addEventListener("click", () => { state.sound = state.sound === false; updateSoundBtn(); save(); });
 
     $$(".modal").forEach(m => m.addEventListener("click", e => {

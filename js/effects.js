@@ -89,7 +89,7 @@
       { transform: `translate(calc(-50% + ${dx * 0.55}px), calc(-50% + ${dy * 0.55 - rise}px)) scale(1.15) rotate(${spin * 0.5}deg)`, opacity: 1, offset: 0.35 },
       { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy - rise * 0.4 + 140}px)) scale(0.8) rotate(${spin}deg)`, opacity: 0 }
     ], { duration: dur, easing: "cubic-bezier(.2,.7,.3,1)" });
-    anim.onfinish = () => root.removeChild(p);
+    anim.onfinish = () => p.parentNode && root.removeChild(p);
   }
 
   function burst(x, y, grade) {
@@ -110,24 +110,33 @@
       { transform: "translate(-50%,-90%) scale(1.9)", opacity: 1, offset: 0.3 },
       { transform: "translate(-50%,-110%) scale(1.6)", opacity: 1, offset: 0.65 },
       { transform: `translate(-50%,${set.up ? "-260%" : "40%"}) scale(0.6)`, opacity: 0 }
-    ], { duration: 1100, easing: "cubic-bezier(.2,.8,.3,1)" }).onfinish = () => root.removeChild(big);
+    ], { duration: 2000, easing: "cubic-bezier(.2,.8,.3,1)" }).onfinish = () => big.parentNode && root.removeChild(big);
 
     // flying emojis
     for (let i = 0; i < set.count; i++) {
       const angle = set.up ? rnd(-Math.PI * 0.95, -Math.PI * 0.05) : rnd(-Math.PI * 0.8, -Math.PI * 0.2);
       const em = set.bits[Math.floor(Math.random() * set.bits.length)];
       particle(root, x, y, em, "fx-emoji", rnd(20, 38), angle, rnd(90, set.up ? 260 : 140), set.up ? rnd(60, 160) : rnd(10, 40),
-        rnd(900, 1500), rnd(-200, 200));
+        rnd(1500, 2100), rnd(-200, 200));
     }
     // confetti for "excellent"
     if (set.confetti) {
       for (let i = 0; i < 34; i++) {
         const c = CONFETTI[i % CONFETTI.length];
         particle(root, x, y, `<i style="background:${c}"></i>`, "fx-confetti", 0, rnd(-Math.PI, 0), rnd(120, 340), rnd(80, 200),
-          rnd(1100, 1800), rnd(-540, 540));
+          rnd(1700, 2200), rnd(-540, 540));
       }
     }
   }
 
-  window.Effects = { play, burst };
+  // drop any particles still flying (the question window is about to close)
+  function clear() {
+    const root = document.getElementById("fxLayer");
+    if (root) root.textContent = "";
+  }
+
+  // how long a reaction plays; the question window stays open until it ends
+  const DURATION = 2300;
+
+  window.Effects = { play, burst, clear, DURATION };
 })();
