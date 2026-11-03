@@ -288,7 +288,8 @@
           <button class="roster-item ${g.selected === s.id ? "selected" : ""} ${rs.length ? "done" : ""} ${rs.length >= limit() ? "full" : ""}" data-student="${s.id}">
             <span class="r-idx">${idx}</span>
             <span class="r-name">${esc(s.name)}</span>
-            <span class="r-chips">${chips}${count}</span>
+            ${count}
+            ${chips ? `<span class="r-chips">${chips}</span>` : ""}
           </button>
         </li>`;
       }).join("");
