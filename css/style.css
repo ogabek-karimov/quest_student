@@ -674,7 +674,7 @@ button { font-family: inherit; }
 .fx { position: absolute; left: 0; top: 0; line-height: 1; will-change: transform, opacity; user-select: none; }
 .fx-big { font-size: 64px; filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.25)); }
 .fx-emoji { filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.18)); }
-.fx-confetti i { display: block; width: 9px; height: 14px; border-radius: 2px; }
+.fx-confetti i { display: block; width: 12px; height: 18px; border-radius: 3px; }
 .grade-btn:active { transform: scale(0.94); }
 
 /* ---------- while a grading reaction plays ---------- */
