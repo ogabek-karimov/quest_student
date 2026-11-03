@@ -513,52 +513,202 @@
     openModal("#finishModal");
   }
 
-  function downloadReport() {
-    if (!window.XLSX) return;
+  // The bundled SheetJS build cannot write cell styles, so the styled build (xlsx-js-style) is loaded
+  // only for the export, under its own name, leaving window.XLSX (used to read files) untouched.
+  let styledXLSX = null;
+  function loadStyledXLSX() {
+    if (styledXLSX) return Promise.resolve(styledXLSX);
+    return new Promise((resolve, reject) => {
+      const reader = window.XLSX;
+      const el = document.createElement("script");
+      el.src = "vendor/xlsx-style.bundle.js";
+      el.onload = () => { styledXLSX = window.XLSX; window.XLSX = reader; resolve(styledXLSX); };
+      el.onerror = () => { window.XLSX = reader; reject(new Error("xlsx-style")); };
+      document.head.appendChild(el);
+    });
+  }
+
+  const XL = (() => {
+    const line = { style: "thin", color: { rgb: "9AA7BD" } };
+    const border = { top: line, bottom: line, left: line, right: line };
+    const navy = "1F3C72";
+    return {
+      title: { font: { bold: true, sz: 16, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: navy } }, alignment: { horizontal: "center", vertical: "center" }, border },
+      label: { font: { bold: true, color: { rgb: navy } }, fill: { fgColor: { rgb: "E9EEF8" } }, alignment: { vertical: "center" }, border },
+      value: { alignment: { horizontal: "left", vertical: "center" }, border },
+      head: { font: { bold: true, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: navy } }, alignment: { horizontal: "center", vertical: "center", wrapText: true }, border },
+      cell: { alignment: { vertical: "center", wrapText: true }, border },
+      center: { alignment: { horizontal: "center", vertical: "center", wrapText: true }, border },
+      zebra: "F6F8FB",
+      total: { font: { bold: true, color: { rgb: navy } }, fill: { fgColor: { rgb: "E9EEF8" } }, alignment: { vertical: "center" },
+        border: { top: { style: "medium", color: { rgb: navy } }, bottom: line, left: line, right: line } },
+      grade: {
+        excellent: { fill: "E5F4EA", font: "1F8A4C" },
+        good: { fill: "FBF1DC", font: "9A6B10" },
+        bad: { fill: "FBE9E7", font: "C0392B" }
+      },
+      muted: "94A3B8"
+    };
+  })();
+
+  // put a value with a style into a sheet cell
+  function put(ws, X, r, c, v, style) {
+    const ref = X.utils.encode_cell({ r, c });
+    ws[ref] = { v: v == null ? "" : v, t: typeof v === "number" ? "n" : "s", s: style };
+  }
+
+  function withFill(style, rgb) {
+    return Object.assign({}, style, { fill: { fgColor: { rgb } } });
+  }
+
+  function gradeStyle(base, grade) {
+    const g = XL.grade[grade];
+    if (!g) return base;
+    return Object.assign({}, base, { fill: { fgColor: { rgb: g.fill } }, font: { bold: true, color: { rgb: g.font } } });
+  }
+
+  // A4 landscape, fit to one page wide; optional frozen header row. Written straight into the sheet XML.
+  function addPrintSetup(X, data, sheets) {
+    const zip = X.CFB.read(new Uint8Array(data), { type: "array" });
+    sheets.forEach((opt, i) => {
+      const entry = X.CFB.find(zip, "/xl/worksheets/sheet" + (i + 1) + ".xml");
+      if (!entry) return;
+      let xml = new TextDecoder().decode(entry.content);
+      xml = xml.replace(/(<worksheet[^>]*>)/, '$1<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>');
+      xml = xml.replace(/(<pageMargins[^>]*\/>)/, '$1<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>');
+      if (opt.freezeRows) {
+        const top = "A" + (opt.freezeRows + 1);
+        xml = xml.replace(/<sheetView workbookViewId="0"\/>/,
+          `<sheetView workbookViewId="0"><pane ySplit="${opt.freezeRows}" topLeftCell="${top}" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="${top}" sqref="${top}"/></sheetView>`);
+      }
+      entry.content = new TextEncoder().encode(xml);
+    });
+    return X.CFB.write(zip, { fileType: "zip", type: "array", compression: true });
+  }
+
+  function saveFile(data, name) {
+    const blob = new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.parentNode.removeChild(a); }, 1000);
+  }
+
+  async function downloadReport() {
+    let X;
+    try { X = await loadStyledXLSX(); } catch (e) { return toast(t("readError", { msg: e.message }), "error"); }
     const g = state.game;
     const now = new Date();
-    const head = [
-      [t("reportTitle") + " — Quest Student"],
+    const COLS = 8;
+
+    // ---------- sheet 1: summary ----------
+    const ws1 = {};
+    const merges = [];
+    let r = 0;
+    for (let c = 0; c < COLS; c++) put(ws1, X, r, c, c ? "" : t("reportTitle") + " — Quest Student", XL.title);
+    merges.push({ s: { r, c: 0 }, e: { r, c: COLS - 1 } });
+    r++;
+    const info = [
       [t("rTeacher"), state.teacher],
       [t("rDate"), fmtDate(now)],
-      [t("questionsPreview"), state.questions.length, t("rounds"), g.round, t("rPerStudent"), limit()],
-      []
+      [t("questionsPreview"), state.questions.length],
+      [t("rounds"), g.round],
+      [t("rPerStudent"), limit()],
+      [t("totalStudents"), state.students.length],
+      [t("answered"), new Set(g.results.map(x => x.studentId)).size]
     ];
-    const summaryHeader = ["№", t("student"), t("questionNo"), t("grade"), t("rAvg"), t("rCountExcellent"), t("rCountGood"), t("rCountBad")];
-    const summaryRows = state.students.map((s, i) => {
-      const rs = resultsOf(s.id);
-      const c = gradeCounts(rs);
+    for (const [label, value] of info) {
+      put(ws1, X, r, 0, label, XL.label); put(ws1, X, r, 1, "", XL.label);
+      for (let c = 2; c < COLS; c++) put(ws1, X, r, c, c === 2 ? value : "", XL.value);
+      merges.push({ s: { r, c: 0 }, e: { r, c: 1 } }, { s: { r, c: 2 }, e: { r, c: COLS - 1 } });
+      r++;
+    }
+    r++; // empty row
+    const headRow = r;
+    const summaryRows = [];
+    ["№", t("student"), t("questionNo"), t("grade"), t("rAvg"), t("rCountExcellent"), t("rCountGood"), t("rCountBad")]
+      .forEach((h, c) => put(ws1, X, r, c, h, XL.head));
+    r++;
+    state.students.forEach((st, i) => {
+      const rs = resultsOf(st.id);
+      const cnt = gradeCounts(rs);
       const og = overallGrade(rs);
-      return [
-        i + 1, s.name,
-        rs.map(r => r.card + 1).join(", ") || "—",
-        rs.map(r => t(r.grade)).join(", ") || t("notGraded"),
-        og ? t(og) : "—",
-        c.excellent, c.good, c.bad
-      ];
+      const zebra = i % 2 ? XL.zebra : null;
+      const cell = zebra ? withFill(XL.cell, zebra) : XL.cell;
+      const center = zebra ? withFill(XL.center, zebra) : XL.center;
+      const notGraded = Object.assign({}, center, { font: { italic: true, color: { rgb: XL.muted } } });
+      put(ws1, X, r, 0, i + 1, center);
+      put(ws1, X, r, 1, st.name, cell);
+      put(ws1, X, r, 2, rs.map(x => x.card + 1).join(", ") || "—", center);
+      put(ws1, X, r, 3, rs.length ? rs.map(x => t(x.grade)).join(", ") : t("notGraded"), rs.length ? center : notGraded);
+      put(ws1, X, r, 4, og ? t(og) : "—", og ? gradeStyle(center, og) : center);
+      put(ws1, X, r, 5, cnt.excellent, cnt.excellent ? gradeStyle(center, "excellent") : center);
+      put(ws1, X, r, 6, cnt.good, cnt.good ? gradeStyle(center, "good") : center);
+      put(ws1, X, r, 7, cnt.bad, cnt.bad ? gradeStyle(center, "bad") : center);
+      const gradesText = rs.map(x => t(x.grade)).join(", ");
+      const lines = Math.max(1, Math.ceil(gradesText.length / 24), Math.ceil(st.name.length / 32));
+      summaryRows[r] = { hpt: Math.max(20, lines * 15 + 5) };
+      r++;
     });
     const total = gradeCounts(g.results);
-    const ws1 = XLSX.utils.aoa_to_sheet([...head, summaryHeader, ...summaryRows, [],
-      ["", t("totalStudents") + ": " + state.students.length, "", t("answered") + ": " + new Set(g.results.map(r => r.studentId)).size, "", total.excellent, total.good, total.bad]]);
-    ws1["!cols"] = [{ wch: 5 }, { wch: 34 }, { wch: 12 }, { wch: 28 }, { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 12 }];
-    ws1["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }];
+    const totalCenter = Object.assign({}, XL.total, { alignment: { horizontal: "center", vertical: "center" } });
+    put(ws1, X, r, 0, t("total"), XL.total);
+    for (let c = 1; c < 5; c++) put(ws1, X, r, c, "", XL.total);
+    merges.push({ s: { r, c: 0 }, e: { r, c: 4 } });
+    put(ws1, X, r, 5, total.excellent, totalCenter);
+    put(ws1, X, r, 6, total.good, totalCenter);
+    put(ws1, X, r, 7, total.bad, totalCenter);
+    ws1["!ref"] = X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r, c: COLS - 1 } });
+    ws1["!merges"] = merges;
+    ws1["!cols"] = [{ wch: 6 }, { wch: 34 }, { wch: 14 }, { wch: 26 }, { wch: 16 }, { wch: 11 }, { wch: 14 }, { wch: 11 }];
+    ws1["!rows"] = summaryRows;
+    ws1["!rows"][0] = { hpt: 30 };
+    ws1["!margins"] = { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 };
+    ws1["!rows"][headRow] = { hpt: 32 };
 
-    const detailHeader = ["№", t("student"), t("rRound"), t("questionNo"), t("rQuestion"), t("rAnswer"), t("grade"), t("rTime")];
-    const detailRows = g.results.map((r, i) => [
-      i + 1, r.name, r.round, r.card + 1, r.question,
-      (state.questions[r.qIndex] && state.questions[r.qIndex].answer) || "—",
-      t(r.grade), fmtDate(new Date(r.time))
-    ]);
-    const ws2 = XLSX.utils.aoa_to_sheet([detailHeader, ...detailRows]);
-    ws2["!cols"] = [{ wch: 5 }, { wch: 30 }, { wch: 8 }, { wch: 10 }, { wch: 70 }, { wch: 40 }, { wch: 14 }, { wch: 18 }];
+    // ---------- sheet 2: details ----------
+    const ws2 = {};
+    const detailHead = ["№", t("student"), t("rRound"), t("questionNo"), t("rQuestion"), t("rAnswer"), t("grade"), t("rTime")];
+    const widths = [6, 28, 8, 10, 60, 36, 14, 18];
+    detailHead.forEach((h, c) => put(ws2, X, 0, c, h, XL.head));
+    const rows2 = [{ hpt: 30 }];
+    g.results.forEach((res, i) => {
+      const rr = i + 1;
+      const zebra = i % 2 ? XL.zebra : null;
+      const cell = zebra ? withFill(XL.cell, zebra) : XL.cell;
+      const center = zebra ? withFill(XL.center, zebra) : XL.center;
+      const answer = (state.questions[res.qIndex] && state.questions[res.qIndex].answer) || "—";
+      put(ws2, X, rr, 0, rr, center);
+      put(ws2, X, rr, 1, res.name, cell);
+      put(ws2, X, rr, 2, res.round, center);
+      put(ws2, X, rr, 3, res.card + 1, center);
+      put(ws2, X, rr, 4, res.question, cell);
+      put(ws2, X, rr, 5, answer, cell);
+      put(ws2, X, rr, 6, t(res.grade), gradeStyle(center, res.grade));
+      put(ws2, X, rr, 7, fmtDate(new Date(res.time)), center);
+      // Excel does not grow rows for wrapped text by itself, so size them from the longest cell
+      const lines = Math.max(1, Math.ceil(String(res.question).length / (widths[4] - 4)), Math.ceil(String(answer).length / (widths[5] - 4)),
+        Math.ceil(String(res.name).length / (widths[1] - 2)));
+      rows2[rr] = { hpt: Math.max(20, lines * 15 + 5) };
+    });
+    const last2 = Math.max(1, g.results.length);
+    ws2["!ref"] = X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: last2, c: detailHead.length - 1 } });
+    if (!g.results.length) for (let c = 0; c < detailHead.length; c++) put(ws2, X, 1, c, c === 1 ? t("noResults") : "", XL.cell);
+    ws2["!cols"] = widths.map(w => ({ wch: w }));
+    ws2["!rows"] = rows2;
+    ws2["!margins"] = { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 };
+    ws2["!autofilter"] = { ref: X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: last2, c: detailHead.length - 1 } }) };
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws1, t("rSummary").slice(0, 31));
-    XLSX.utils.book_append_sheet(wb, ws2, t("rDetails").slice(0, 31));
+    const wb = X.utils.book_new();
+    X.utils.book_append_sheet(wb, ws1, t("rSummary").slice(0, 31));
+    X.utils.book_append_sheet(wb, ws2, t("rDetails").slice(0, 31));
     const p = n => String(n).padStart(2, "0");
     const stamp = `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}_${p(now.getHours())}-${p(now.getMinutes())}`;
     const safeTeacher = state.teacher.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, "_").slice(0, 40);
-    XLSX.writeFile(wb, `${t("reportTitle")}_${safeTeacher}_${stamp}.xlsx`);
+    const data = addPrintSetup(X, X.write(wb, { type: "array", bookType: "xlsx" }), [{}, { freezeRows: 1 }]);
+    saveFile(data, `${t("reportTitle")}_${safeTeacher}_${stamp}.xlsx`);
   }
 
   function newSession() {

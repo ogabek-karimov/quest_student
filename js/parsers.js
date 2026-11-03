@@ -5,7 +5,7 @@
   // "1. ...", "1) ...", "№1 ...", "1-savol ...", "Savol 1: ...", "Question 1. ..."
   const NUM_RE = /^\s*(?:№\s*)?\d{1,3}\s*(?:[.)\]:]|-(?!\d))\s*(?=\S)/;
   const WORD_NUM_RE = /^\s*(?:(?:\d{1,3}\s*-?\s*(?:savol|вопрос))|(?:savol|question|вопрос)\s*(?:№\s*)?\d{1,3})\s*[.):\-]?\s*/i;
-  const LIST_PREFIX_RE = /^\s*(?:№\s*)?\d{1,4}\s*[.)\-:]?\s+/;
+  const LIST_PREFIX_RE = /^\s*(?:№\s*)?\d{1,4}\s*(?:[.)\-:]\s*|\s+)(?=\p{L})/u;
   const OPTION_RE = /^\s*[A-Fa-fА-Еа-е]\s*[).]\s+/;
 
   function readArrayBuffer(file) {
@@ -456,7 +456,7 @@
         if (full.length) use = [full[0]];
         const names = [];
         for (const row of rows.slice(i + 1)) {
-          const name = normText(use.map(idx => row[idx] || "").join(" "));
+          const name = normText(use.map(idx => row[idx] || "").join(" ")).replace(LIST_PREFIX_RE, "");
           if (looksLikeName(name)) names.push(name);
         }
         if (names.length) return names;
