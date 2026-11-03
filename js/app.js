@@ -347,6 +347,7 @@
   function zoom(delta) {
     textScale = delta === 0 ? 1 : Math.round(Math.min(1.6, Math.max(0.7, textScale + delta)) * 10) / 10;
     applyTextScale();
+    setTimeout(updateScrollHint, 250);
   }
 
   function setAnswerBtn(open) {
@@ -361,6 +362,13 @@
     box.hidden = !box.hidden;
     setAnswerBtn(!box.hidden);
     if (!box.hidden) box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    requestAnimationFrame(updateScrollHint);
+  }
+
+  // fade + arrow at the bottom while more of a long question/answer is hidden below
+  function updateScrollHint() {
+    const el = $("#qScroll");
+    el.classList.toggle("more", el.scrollHeight - el.scrollTop - el.clientHeight > 4);
   }
 
   function showQuestion() {
@@ -379,6 +387,8 @@
     $("#qProgress").hidden = !showProgress;
     if (showProgress) $("#qProgress").textContent = `${resultsOf(st.id).length + 1}/${limit()}`;
     $("#qModalBody").innerHTML = q ? q.html : "";
+    $("#qScroll").scrollTop = 0;
+    requestAnimationFrame(updateScrollHint);
     // the "show answer" button exists only for questions whose file gave an answer
     const answer = q && q.answer;
     $("#answerRow").hidden = !answer;
@@ -667,6 +677,8 @@
     $("#zoomIn").addEventListener("click", () => zoom(0.1));
     $("#zoomReset").addEventListener("click", () => zoom(0));
     $("#answerBtn").addEventListener("click", toggleAnswer);
+    $("#qScroll").addEventListener("scroll", updateScrollHint, { passive: true });
+    window.addEventListener("resize", updateScrollHint);
     applyTextScale();
     if (synth && synth.onvoiceschanged !== undefined) synth.onvoiceschanged = () => synth.getVoices();
     $$(".grade-btn").forEach(b => b.addEventListener("click", () => gradeCurrent(b.dataset.grade)));

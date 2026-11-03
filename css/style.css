@@ -633,3 +633,27 @@ button { font-family: inherit; }
   .qa-text { font-size: calc(1.15rem * var(--qscale, 1)); }
   .answer-btn { width: 100%; justify-content: center; }
 }
+
+/* ---------- long questions/answers: header and grading stay put, the middle scrolls ---------- */
+.modal-box.question-box { max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow: hidden; }
+.question-box .modal-head, .question-box .grade-row, .question-box .modal-foot { flex: none; }
+.q-scroll {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; padding-right: 6px; margin-right: -6px;
+  scrollbar-width: thin; scrollbar-color: #9fb0cc transparent;
+}
+.q-scroll::-webkit-scrollbar { width: 10px; }
+.q-scroll::-webkit-scrollbar-thumb { background: #b8c5dc; border-radius: 10px; border: 2px solid #fff; }
+.q-scroll::-webkit-scrollbar-thumb:hover { background: var(--navy); }
+.question-box .q-scroll .q-body { flex: 1 0 auto; }
+.q-scroll .answer-row, .q-scroll .q-answer { flex: none; }
+.q-scroll.more { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent); }
+.scroll-hint { position: relative; height: 0; flex: none; pointer-events: none; }
+.scroll-hint span {
+  position: absolute; left: 50%; top: -50px; transform: translateX(-50%);
+  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--navy); color: #fff; font-weight: 700; box-shadow: 0 6px 16px rgba(31, 60, 114, 0.35);
+  opacity: 0; transition: opacity 0.25s; animation: hintBob 1.4s ease-in-out infinite;
+}
+.q-scroll.more + .scroll-hint span { opacity: 1; }
+@keyframes hintBob { 50% { transform: translate(-50%, 5px); } }
