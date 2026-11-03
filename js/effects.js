@@ -5,6 +5,9 @@
   // ---------- sound (Web Audio, no files) ----------
   let ctx = null, out = null;
   const VOLUME = 2.2; // overall loudness; the limiter below keeps loud overlaps from distorting
+  // per-grade loudness, tuned so the peaks are about A'lo 0.85, Qoniqarli 0.80, Yomon 0.76
+  const LEVEL = { excellent: 1.233, good: 1.103, bad: 1.486 };
+  let dest = null; // where tone() sends sound while a tune is being scheduled
   function audio() {
     if (!ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -35,7 +38,7 @@
     g.gain.setValueAtTime(0.0001, start);
     g.gain.exponentialRampToValueAtTime(gain, start + 0.02);
     g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-    osc.connect(g).connect(out);
+    osc.connect(g).connect(dest || out);
     osc.start(start);
     osc.stop(start + dur + 0.05);
   }
@@ -65,7 +68,12 @@
   function play(grade) {
     const ac = audio();
     if (!ac || !TUNES[grade]) return;
+    const level = ac.createGain();
+    level.gain.value = LEVEL[grade] || 1;
+    level.connect(out);
+    dest = level;
     TUNES[grade](ac, ac.currentTime + 0.02);
+    dest = null;
   }
 
   // ---------- emoji burst ----------
