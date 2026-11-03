@@ -153,6 +153,11 @@
     return finish(qs, {});
   }
 
+  const endsWithQ = t => /[?？]\s*$/.test(t || "");
+  // a plain text line: not an option, not a marked option, not a list item / table / picture
+  const isPlainLine = b => !!b.text && !b.list && b.tag !== "table" && !b.el.querySelector("img, table") &&
+    !OPTION_RE.test(b.text) && !MARK_RE.test(b.text) && !ANSWER_RE.test(b.text) && !SEPARATOR_RE.test(b.text);
+
   function groupQuestions(blocks) {
     if (blocks.filter(b => /^\s*\+{3,}\s*$/.test(b.text)).length >= 1 && blocks.some(b => /^\s*={3,}\s*$/.test(b.text))) {
       return groupPlusFormat(blocks);
@@ -161,6 +166,14 @@
     // because then auto lists are usually answer options.
     const manual = blocks.some(b => b.list !== "ol" && isManualStart(b.text) && !KEY_HEAD_RE.test(b.text));
     const hasOl = blocks.some(b => b.list === "ol");
+    // Unnumbered "question? / answer" pairs: a line ending with "?" followed by a plain line.
+    let qaMode = false;
+    if (!manual && !hasOl) {
+      const qCount = blocks.filter(b => endsWithQ(b.text)).length;
+      let pairs = 0;
+      blocks.forEach((b, i) => { if (endsWithQ(b.text) && blocks[i + 1] && !endsWithQ(blocks[i + 1].text) && isPlainLine(blocks[i + 1])) pairs++; });
+      qaMode = qCount > 0 && pairs >= Math.max(1, Math.ceil(qCount * 0.6));
+    }
     const questions = [];
     const keyMap = {};
     let cur = null, keyMode = false;
@@ -184,13 +197,22 @@
 
       let start;
       if (manual || hasOl) start = manual ? isManualStart(b.text) : b.list === "ol";
+      else if (qaMode) start = endsWithQ(b.text);
       else start = !(/^h[1-6]$/.test(b.tag || "") && blocks.length > 1) && !(cur && (OPTION_RE.test(b.text) || MARK_RE.test(b.text)));
+
+      // "Question?" followed by a plain line (no "Javob:" prefix, no options): that line is the answer
+      if (!start && cur && cur.asksQ && !cur.hasOptions && isPlainLine(b)) {
+        addAnswer(normText(b.text));
+        continue;
+      }
+      if (!start && qaMode && !cur) continue; // title lines before the first question
 
       if (start) {
         push();
         const num = (/\d{1,3}/.exec(b.text) || [])[0];
         if (manual) stripLeadingNumber(b.el);
         cur = { html: blockHtml(b), text: normText(b.el.textContent), num: manual && num ? Number(num) : undefined };
+        cur.asksQ = endsWithQ(cur.text) && !cur.answer;
       } else if (cur) {
         if (MARK_RE.test(b.text)) {
           // a correct option marked with "#" / "*": show it without the marker, remember it as the answer
@@ -199,6 +221,7 @@
           while ((node = walker.nextNode())) { if (node.nodeValue.trim()) { node.nodeValue = node.nodeValue.replace(MARK_RE, ""); break; } }
           if (!cur.answer) cur.answer = normText(b.el.textContent);
         }
+        cur.hasOptions = true; // options / extra content follow, so later lines are not a bare answer
         cur.html += blockHtml(b);
         cur.text += " " + normText(b.el.textContent);
       }
@@ -247,18 +270,23 @@
         const y = it.transform[5], h = Math.abs(it.transform[3]) || it.height || 10;
         let line = lines.find(l => Math.abs(l.y - y) < h * 0.5);
         if (!line) { line = { y, h, parts: [] }; lines.push(line); }
-        line.parts.push({ x: it.transform[4], str: it.str });
+        line.parts.push({ x: it.transform[4], str: it.str, end: it.transform[4] + (it.width || 0) });
       }
       lines.sort((a, b) => b.y - a.y);
+      // right edge of the text block: a line ending well before it was ended on purpose (end of paragraph)
+      const pageWidth = page.view ? page.view[2] - page.view[0] : 595;
+      const rightEdge = Math.max(pageWidth * 0.7, ...lines.map(l => Math.max(...l.parts.map(p => p.end))));
       let prev = null;
       for (const l of lines) {
         const text = normText(l.parts.sort((a, b) => a.x - b.x).map(p => p.str).join(" ").replace(/\s+/g, " "));
         if (!text || /^\d{1,4}$/.test(text) && (l === lines[lines.length - 1] || l === lines[0])) { continue; } // page numbers
         const gap = prev ? prev.y - l.y : Infinity;
-        const startsNew = !paras.length || gap > l.h * 1.9 || isManualStart(text) || OPTION_RE.test(text) || n !== prev.page;
+        const prevShort = prev && prev.page === n && prev.end < rightEdge * 0.8;
+        const startsNew = !paras.length || gap > l.h * 1.9 || isManualStart(text) || OPTION_RE.test(text) || n !== prev.page || prevShort ||
+          /[?？]\s*$/.test(paras[paras.length - 1]) || ANSWER_RE.test(text); // "Question?" then its answer on the next line
         if (startsNew) paras.push(text);
         else paras[paras.length - 1] += " " + text;
-        prev = { y: l.y, page: n };
+        prev = { y: l.y, page: n, end: Math.max(...l.parts.map(p => p.end)) };
       }
     }
     return paras;
