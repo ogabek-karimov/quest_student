@@ -527,7 +527,7 @@ button { font-family: inherit; }
 }
 .jump:focus-within { border-color: var(--navy); box-shadow: 0 0 0 4px rgba(31, 60, 114, 0.12); }
 .jump input {
-  width: 92px; border: 0; outline: 0; background: transparent; color: var(--text);
+  width: 112px; border: 0; outline: 0; background: transparent; color: var(--text);
   font: inherit; font-weight: 600; padding: 0 12px; -moz-appearance: textfield;
 }
 .jump input::-webkit-outer-spin-button, .jump input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -686,3 +686,7 @@ button { font-family: inherit; }
 #questionModal.grading .grade-btn:not(.chosen) { opacity: 0.4; filter: grayscale(0.6); }
 #questionModal.grading [data-close] { pointer-events: none; opacity: 0.5; }
 .grade-btn { touch-action: manipulation; }
+
+/* header items keep one size in every language: text stays centred inside the locked width */
+#gameScreen .stat { box-sizing: border-box; }
+#shuffleBtn, #reportBtnTop, #finishBtn { box-sizing: border-box; justify-content: center; }

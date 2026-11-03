@@ -82,6 +82,24 @@
   }
 
   // ---------- i18n ----------
+  // Header items get the width of their longest translation, so switching UZ/EN never moves or resizes them.
+  const LOCKED = ["#gameScreen .brand", "#gameScreen .stat", "#shuffleBtn", "#reportBtnTop", "#finishBtn"];
+  function lockWidths() {
+    const langs = Object.keys(window.I18N);
+    LOCKED.forEach(sel => $$(sel).forEach(el => {
+      if (!el.offsetParent) return; // hidden now; measured when it is shown
+      const parts = [el, ...el.querySelectorAll("[data-i18n]")].filter(x => x.dataset && x.dataset.i18n);
+      el.style.minWidth = "";
+      let max = 0;
+      for (const lang of langs) {
+        parts.forEach(x => { x.textContent = window.I18N[lang][x.dataset.i18n] || x.textContent; });
+        max = Math.max(max, el.getBoundingClientRect().width);
+      }
+      parts.forEach(x => { x.textContent = t(x.dataset.i18n); });
+      el.style.minWidth = Math.ceil(max) + "px";
+    }));
+  }
+
   function applyLang() {
     document.documentElement.lang = state.lang;
     $$("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
@@ -271,6 +289,7 @@
     grid.classList.toggle("locked", hasStudents && !g.selected);
 
     if (hasStudents) renderRoster();
+    lockWidths();
   }
 
   function renderRoster() {
@@ -911,4 +930,5 @@
   }
 
   init();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (state.screen === "game") lockWidths(); });
 })();
