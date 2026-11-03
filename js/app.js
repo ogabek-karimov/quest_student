@@ -87,6 +87,7 @@
     $$("[data-i18n-placeholder]").forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
     $$("[data-i18n-title]").forEach(el => { el.title = t(el.dataset.i18nTitle); });
     updateSpeakBtn();
+    if ($("#answerBtn")) setAnswerBtn(!$("#qAnswer").hidden);
     $$(".lang-btn").forEach(b => b.classList.toggle("active", b.dataset.lang === state.lang));
     renderSetup();
     if (state.screen === "game") renderGame();
@@ -175,7 +176,7 @@
   // ---------- game ----------
   function newGame() {
     return {
-      order: freshOrder(state.questions.length),
+      order: [...Array(state.questions.length).keys()], // file order; only "Shuffle" mixes it
       used: {},            // card index -> {studentId, grade}
       round: 1,
       selected: null,      // selected student id
@@ -348,6 +349,20 @@
     applyTextScale();
   }
 
+  function setAnswerBtn(open) {
+    const btn = $("#answerBtn");
+    btn.classList.toggle("open", open);
+    btn.querySelector(".ab-label").textContent = t(open ? "hideAnswer" : "showAnswer");
+    btn.querySelector(".ab-icon").textContent = open ? "🙈" : "👁";
+  }
+
+  function toggleAnswer() {
+    const box = $("#qAnswer");
+    box.hidden = !box.hidden;
+    setAnswerBtn(!box.hidden);
+    if (!box.hidden) box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+
   function showQuestion() {
     const g = state.game;
     const cur = g.current;
@@ -364,6 +379,12 @@
     $("#qProgress").hidden = !showProgress;
     if (showProgress) $("#qProgress").textContent = `${resultsOf(st.id).length + 1}/${limit()}`;
     $("#qModalBody").innerHTML = q ? q.html : "";
+    // the "show answer" button exists only for questions whose file gave an answer
+    const answer = q && q.answer;
+    $("#answerRow").hidden = !answer;
+    $("#qAnswer").hidden = true;
+    $("#qAnswerText").textContent = answer || "";
+    setAnswerBtn(false);
     $("#gradeRow").hidden = !st;
     $("#qModalFoot").hidden = !!st;
     openModal("#questionModal");
@@ -494,12 +515,14 @@
     ws1["!cols"] = [{ wch: 5 }, { wch: 34 }, { wch: 12 }, { wch: 28 }, { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 12 }];
     ws1["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }];
 
-    const detailHeader = ["№", t("student"), t("rRound"), t("questionNo"), t("rQuestion"), t("grade"), t("rTime")];
+    const detailHeader = ["№", t("student"), t("rRound"), t("questionNo"), t("rQuestion"), t("rAnswer"), t("grade"), t("rTime")];
     const detailRows = g.results.map((r, i) => [
-      i + 1, r.name, r.round, r.card + 1, r.question, t(r.grade), fmtDate(new Date(r.time))
+      i + 1, r.name, r.round, r.card + 1, r.question,
+      (state.questions[r.qIndex] && state.questions[r.qIndex].answer) || "—",
+      t(r.grade), fmtDate(new Date(r.time))
     ]);
     const ws2 = XLSX.utils.aoa_to_sheet([detailHeader, ...detailRows]);
-    ws2["!cols"] = [{ wch: 5 }, { wch: 30 }, { wch: 8 }, { wch: 10 }, { wch: 70 }, { wch: 14 }, { wch: 18 }];
+    ws2["!cols"] = [{ wch: 5 }, { wch: 30 }, { wch: 8 }, { wch: 10 }, { wch: 70 }, { wch: 40 }, { wch: 14 }, { wch: 18 }];
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws1, t("rSummary").slice(0, 31));
@@ -643,6 +666,7 @@
     $("#zoomOut").addEventListener("click", () => zoom(-0.1));
     $("#zoomIn").addEventListener("click", () => zoom(0.1));
     $("#zoomReset").addEventListener("click", () => zoom(0));
+    $("#answerBtn").addEventListener("click", toggleAnswer);
     applyTextScale();
     if (synth && synth.onvoiceschanged !== undefined) synth.onvoiceschanged = () => synth.getVoices();
     $$(".grade-btn").forEach(b => b.addEventListener("click", () => gradeCurrent(b.dataset.grade)));

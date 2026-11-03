@@ -19,6 +19,14 @@ Talabalar uchun savol kartalari. Ustoz Word fayldan savollarni yuklaydi, har bir
 - **Excel:** har bir qatorda bitta savol. Jadval sarlavhasida `Savol` / `Question` ustuni bo'lsa, o'sha ustun olinadi; `A`, `B`, `C`, `D` ustunlari variant sifatida qo'shiladi, `To'g'ri javob` ustuni talabalarga ko'rsatilmaydi. Sarlavha bo'lmasa, eng ko'p matnli ustun olinadi.
 - Skaner qilingan (rasm ko'rinishidagi) PDF'dan matn o'qib bo'lmaydi.
 
+## To'g'ri javoblar (ixtiyoriy)
+Faylda javob bo'lsa, savol oynasida **"To'g'ri javobni ko'rish"** tugmasi chiqadi; javobi yo'q savollarda tugma bo'lmaydi.
+- **Word / PDF / txt:** savol ostida `Javob: ...`, `To'g'ri javob: ...` yoki `Answer: ...` qatori; yoki fayl oxirida `Javoblar:` bo'limi (`1-A, 2-C, 3-B`).
+- **HEMIS formati:** savollar `++++`, variantlar `====` bilan ajratilgan, to'g'ri variant oldida `#`.
+- **Excel:** `To'g'ri javob` / `Answer` ustuni (harf bo'lsa, mos variant matni ko'rsatiladi).
+
+Savollar fayldagi tartibda chiqadi; faqat **Aralashtirish** tugmasi bosilganda aralashadi.
+
 Namunalar: `samples/` papkasida.
 
 ## GitHub Pages'da ishga tushirish (bepul)

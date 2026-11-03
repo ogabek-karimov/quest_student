@@ -6,6 +6,7 @@
   const NUM_RE = /^\s*(?:№\s*)?\d{1,3}\s*(?:[.)\]:]|-(?!\d))\s*(?=\S)/;
   const WORD_NUM_RE = /^\s*(?:(?:\d{1,3}\s*-?\s*(?:savol|вопрос))|(?:savol|question|вопрос)\s*(?:№\s*)?\d{1,3})\s*[.):\-]?\s*/i;
   const LIST_PREFIX_RE = /^\s*(?:№\s*)?\d{1,4}\s*[.)\-:]?\s+/;
+  const OPTION_RE = /^\s*[A-Fa-fА-Еа-е]\s*[).]\s+/;
 
   function readArrayBuffer(file) {
     return new Promise((resolve, reject) => {
@@ -86,41 +87,125 @@
     return NUM_RE.test(text) || WORD_NUM_RE.test(text);
   }
 
+  // ---------- answers ----------
+  // "Javob: ...", "To'g'ri javob - ...", "Answer: ...", "Ответ: ..."
+  const ANSWER_RE = /^\s*(?:to['ʻ`’]?g['ʻ`’]?ri\s+javob|javob|correct\s+answer|answer|правильный\s+ответ|ответ)\s*[:\-–—]\s*/i;
+  // "Javoblar:", "Javoblar kaliti", "Answer key", "Answers:", "Ответы:" (an answer key section)
+  const KEY_HEAD_RE = /^\s*(?:to['ʻ`’]?g['ʻ`’]?ri\s+javoblar|javoblar(?:\s+kaliti)?|kalit(?:lar)?|answers?\s+key|answers|ключ(?:\s+ответов)?|ответы)\s*[:\-–—]?\s*/i;
+  const KEY_PAIR_RE = /(\d{1,3})\s*[-.)\]:=–—]\s*([^,;]+?)(?=\s*[,;]|\s+\d{1,3}\s*[-.)\]:=–—]|\s*$)/g;
+  const SEPARATOR_RE = /^\s*(?:\+{3,}|={3,})\s*$/;
+  const MARK_RE = /^\s*[#*]\s*(?=\S)/; // "#B) HTML" or "*HTML" marks the correct option
+  const LETTER_RE = /^\s*([A-Fa-fА-Еа-е])\s*[).]?\s*$/;
+
+  function parseKeyLine(text, map) {
+    let m;
+    KEY_PAIR_RE.lastIndex = 0;
+    while ((m = KEY_PAIR_RE.exec(text))) map[Number(m[1])] = normText(m[2]);
+  }
+
+  // "B" -> "B) HTML" when the question lists its options as "A) ... B) ..."
+  function expandLetter(answer, qText) {
+    const m = LETTER_RE.exec(answer || "");
+    if (!m) return answer;
+    const L = m[1];
+    const re = new RegExp("(?:^|\\s)" + L + "\\s*[).]\\s*(.+?)(?=\\s+[A-Fa-fА-Еа-е]\\s*[).]\\s|$)", "i");
+    const o = re.exec(qText);
+    return o ? L.toUpperCase() + ") " + o[1].trim() : answer;
+  }
+
+  function finish(questions, keyMap) {
+    return questions
+      .map((q, i) => {
+        let answer = q.answer || keyMap[q.num] || keyMap[i + 1] || "";
+        answer = expandLetter(normText(answer), normText(q.text));
+        const out = { html: q.html.trim(), text: normText(q.text) };
+        if (answer) out.answer = answer;
+        return out;
+      })
+      .filter(q => q.text || /<img/i.test(q.html));
+  }
+
+  // HEMIS-style tests: questions separated by "++++", options by "====", "#" marks the correct one.
+  function groupPlusFormat(blocks) {
+    const groups = [[]];
+    for (const b of blocks) {
+      if (/^\s*\+{3,}\s*$/.test(b.text)) groups.push([]);
+      else if (!/^\s*={3,}\s*$/.test(b.text)) groups[groups.length - 1].push(b);
+    }
+    const qs = [];
+    for (const g of groups) {
+      if (!g.length) continue;
+      const [first, ...opts] = g;
+      stripLeadingNumber(first.el);
+      const q = { html: first.list ? "<p>" + first.el.innerHTML + "</p>" : first.el.outerHTML, text: normText(first.el.textContent) };
+      const letters = "ABCDEF";
+      opts.forEach((o, k) => {
+        let t = o.text;
+        const marked = MARK_RE.test(t);
+        t = t.replace(MARK_RE, "").replace(OPTION_RE, "");
+        const label = (letters[k] || String(k + 1)) + ") " + t;
+        q.html += "<p>" + escapeHtml(label) + "</p>";
+        q.text += " " + label;
+        if (marked && !q.answer) q.answer = label;
+      });
+      qs.push(q);
+    }
+    return finish(qs, {});
+  }
+
   function groupQuestions(blocks) {
+    if (blocks.filter(b => /^\s*\+{3,}\s*$/.test(b.text)).length >= 1 && blocks.some(b => /^\s*={3,}\s*$/.test(b.text))) {
+      return groupPlusFormat(blocks);
+    }
     // Manually typed numbers ("1.", "2)") win over Word's auto-numbered lists,
     // because then auto lists are usually answer options.
-    const manual = blocks.some(b => b.list !== "ol" && isManualStart(b.text));
+    const manual = blocks.some(b => b.list !== "ol" && isManualStart(b.text) && !KEY_HEAD_RE.test(b.text));
     const hasOl = blocks.some(b => b.list === "ol");
     const questions = [];
-    let cur = null;
+    const keyMap = {};
+    let cur = null, keyMode = false;
 
-    const push = () => { if (cur) questions.push(cur); };
+    const push = () => { if (cur) questions.push(cur); cur = null; };
+    const blockHtml = b => (b.list ? "<p>" + b.el.innerHTML + "</p>" : b.el.outerHTML);
+    const addAnswer = text => { if (cur) cur.answer = cur.answer ? cur.answer + " " + text : text; };
 
-    if (manual || hasOl) {
-      for (const b of blocks) {
-        const start = manual ? isManualStart(b.text) : b.list === "ol";
-        if (start) {
-          push();
-          if (manual) stripLeadingNumber(b.el);
-          const html = b.list ? "<p>" + b.el.innerHTML + "</p>" : b.el.outerHTML;
-          cur = { html, text: normText(b.el.textContent) };
-        } else if (cur) {
-          const html = b.list ? "<p>" + b.el.innerHTML + "</p>" : b.el.outerHTML;
-          cur.html += html;
-          cur.text += " " + b.text;
+    for (const b of blocks) {
+      if (keyMode) { parseKeyLine(b.text, keyMap); continue; }
+      const key = KEY_HEAD_RE.exec(b.text);
+      if (key && !ANSWER_RE.test(b.text)) {
+        push();
+        keyMode = true;
+        parseKeyLine(b.text.slice(key[0].length), keyMap);
+        continue;
+      }
+      if (SEPARATOR_RE.test(b.text)) continue;
+      const ans = ANSWER_RE.exec(b.text);
+      if (ans) { addAnswer(normText(b.text.slice(ans[0].length))); continue; } // never shown inside the question
+
+      let start;
+      if (manual || hasOl) start = manual ? isManualStart(b.text) : b.list === "ol";
+      else start = !(/^h[1-6]$/.test(b.tag || "") && blocks.length > 1) && !(cur && (OPTION_RE.test(b.text) || MARK_RE.test(b.text)));
+
+      if (start) {
+        push();
+        const num = (/\d{1,3}/.exec(b.text) || [])[0];
+        if (manual) stripLeadingNumber(b.el);
+        cur = { html: blockHtml(b), text: normText(b.el.textContent), num: manual && num ? Number(num) : undefined };
+      } else if (cur) {
+        if (MARK_RE.test(b.text)) {
+          // a correct option marked with "#" / "*": show it without the marker, remember it as the answer
+          const walker = b.el.ownerDocument.createTreeWalker(b.el, NodeFilter.SHOW_TEXT);
+          let node;
+          while ((node = walker.nextNode())) { if (node.nodeValue.trim()) { node.nodeValue = node.nodeValue.replace(MARK_RE, ""); break; } }
+          if (!cur.answer) cur.answer = normText(b.el.textContent);
         }
-        // text before the first numbered question (title, instructions) is skipped
+        cur.html += blockHtml(b);
+        cur.text += " " + normText(b.el.textContent);
       }
-      push();
-    } else {
-      for (const b of blocks) {
-        if (/^h[1-6]$/.test(b.tag || "") && blocks.length > 1) continue; // titles
-        questions.push({ html: b.list ? "<p>" + b.el.innerHTML + "</p>" : b.el.outerHTML, text: b.text });
-      }
+      // text before the first numbered question (title, instructions) is skipped
     }
-    return questions
-      .map(q => ({ html: q.html.trim(), text: normText(q.text) }))
-      .filter(q => q.text || /<img/i.test(q.html));
+    push();
+    return finish(questions, keyMap);
   }
 
   function textToQuestions(text) {
@@ -146,8 +231,6 @@
     window.pdfjsLib.GlobalWorkerOptions.workerSrc = "vendor/pdf.worker.min.js";
     return window.pdfjsLib;
   }
-
-  const OPTION_RE = /^\s*[A-Fa-fА-Еа-е]\s*[).]\s+/;
 
   // Rebuild paragraphs from positioned text: a new paragraph starts after a
   // larger vertical gap, or when a line starts with a question number / answer option.
@@ -190,7 +273,7 @@
     rows = rows.map(r => (Array.isArray(r) ? r : [r]).map(c => normText(c)));
     rows = rows.filter(r => r.some(Boolean));
     if (!rows.length) return [];
-    let qCol = -1, optCols = [], start = 0;
+    let qCol = -1, optCols = [], ansCol = -1, start = 0;
     for (let i = 0; i < Math.min(rows.length, 10) && qCol < 0; i++) {
       const r = rows[i];
       if (r.filter(Boolean).length < 2) continue; // a title line, not a table header
@@ -199,6 +282,7 @@
         qCol = idx; start = i + 1;
         // answer options are shown, the correct-answer column is never shown to students
         optCols = r.map((c, j) => j).filter(j => j !== qCol && r[j] && OPT_HEADER_RE.test(r[j]) && !ANSWER_HEADER_RE.test(r[j]));
+        ansCol = r.findIndex((c, j) => j !== qCol && c && c.length < 40 && ANSWER_HEADER_RE.test(c));
       }
     }
     if (qCol < 0) {
@@ -221,7 +305,16 @@
         return "<p>" + escapeHtml(short + r[j]) + "</p>";
       });
       html += opts.join("");
-      out.push({ html, text: normText([q].concat(optCols.map(j => r[j] || "")).join(" ")) });
+      const item = { html, text: normText([q].concat(optCols.map(j => r[j] || "")).join(" ")) };
+      let answer = ansCol >= 0 ? (r[ansCol] || "").trim() : "";
+      const lm = LETTER_RE.exec(answer);
+      if (lm) {
+        // "B" -> the text of option column "B"
+        const j = optCols.find(c => rows[start - 1][c].trim().toUpperCase().endsWith(lm[1].toUpperCase()));
+        if (j !== undefined && r[j]) answer = lm[1].toUpperCase() + ") " + r[j];
+      }
+      if (answer) item.answer = answer;
+      out.push(item);
     }
     return out;
   }
