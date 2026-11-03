@@ -3,12 +3,24 @@
   "use strict";
 
   // ---------- sound (Web Audio, no files) ----------
-  let ctx = null;
+  let ctx = null, out = null;
+  const VOLUME = 2.2; // overall loudness; the limiter below keeps loud overlaps from distorting
   function audio() {
     if (!ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
       ctx = new AC();
+      // tones -> boost -> limiter -> speakers
+      const boost = ctx.createGain();
+      boost.gain.value = VOLUME;
+      const limiter = ctx.createDynamicsCompressor();
+      limiter.threshold.value = -6;
+      limiter.knee.value = 4;
+      limiter.ratio.value = 12;
+      limiter.attack.value = 0.002;
+      limiter.release.value = 0.15;
+      boost.connect(limiter).connect(ctx.destination);
+      out = boost;
     }
     if (ctx.state === "suspended") ctx.resume();
     return ctx;
@@ -23,7 +35,7 @@
     g.gain.setValueAtTime(0.0001, start);
     g.gain.exponentialRampToValueAtTime(gain, start + 0.02);
     g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-    osc.connect(g).connect(ac.destination);
+    osc.connect(g).connect(out);
     osc.start(start);
     osc.stop(start + dur + 0.05);
   }
