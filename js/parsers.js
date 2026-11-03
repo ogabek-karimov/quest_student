@@ -154,6 +154,13 @@
   }
 
   const endsWithQ = t => /[?？]\s*$/.test(t || "");
+  // Questions without "?": question words and task verbs (English / Uzbek / Russian)
+  const EN_Q_RE = /^\s*(?:what|who|whom|whose|when|where|why|how|which|is|are|was|were|do|does|did|can|could|should|would|will|has|have|had|name|list|describe|explain|define|compare|contrast|discuss|talk\s+about|tell|give|identify|state|mention|outline|summari[sz]e|analy[sz]e|characteri[sz]e|translate|choose|find|complete|fill\s+in|prove|justify|illustrate|comment\s+on|speak\s+about|write\s+about)\b/i;
+  const UZ_Q_RE = /(?:^|\s)(?:nima|nimalar|nimaga|nimadan|nimani|nimaning|nega|nechun|qanday|qanaqa|qaysi|qaysilar|kim|kimlar|kimning|kimga|qachon|qayer|qayerda|qayerga|qayerdan|qancha|nechta|necha|nechanchi)(?=[\s,.!?:;]|$)/i;
+  const UZ_TASK_RE = /(?:tushuntiring|tushuntirib\s+bering|izohlang|izohlab\s+bering|sanab\s+(?:bering|o['ʻ`’]?ting)|sanang|ayting|aytib\s+bering|yozing|keltiring|aniqlang|ta['ʻ`’]riflang|tavsiflang|ko['ʻ`’]rsating|toping|solishtiring|taqqoslang|tahlil\s+qiling|asoslang|tarjima\s+qiling|gapirib\s+bering|so['ʻ`’]zlab\s+bering|bayon\s+qiling|misol(?:lar)?\s+keltiring|farqini|vazifalarini)\b/i;
+  const UZ_MI_RE = /\S+(?:mi|mu)\s*[.!]?\s*$/i; // "...to'g'rimi" without "?"
+  const RU_Q_RE = /^\s*(?:что|кто|как|какой|какая|какое|какие|когда|где|куда|откуда|почему|зачем|сколько|чем|назовите|опишите|объясните|перечислите|дайте|расскажите|сравните|определите|охарактеризуйте|приведите)(?=[\s,]|$)/i;
+  const isQuestionLike = t => !!t && (endsWithQ(t) || EN_Q_RE.test(t) || UZ_Q_RE.test(t) || UZ_TASK_RE.test(t) || RU_Q_RE.test(t) || (UZ_MI_RE.test(t) && t.split(/\s+/).length > 2));
   // a plain text line: not an option, not a marked option, not a list item / table / picture
   const isPlainLine = b => !!b.text && !b.list && b.tag !== "table" && !b.el.querySelector("img, table") &&
     !OPTION_RE.test(b.text) && !MARK_RE.test(b.text) && !ANSWER_RE.test(b.text) && !SEPARATOR_RE.test(b.text);
@@ -169,9 +176,9 @@
     // Unnumbered "question? / answer" pairs: a line ending with "?" followed by a plain line.
     let qaMode = false;
     if (!manual && !hasOl) {
-      const qCount = blocks.filter(b => endsWithQ(b.text)).length;
+      const qCount = blocks.filter(b => isQuestionLike(b.text)).length;
       let pairs = 0;
-      blocks.forEach((b, i) => { if (endsWithQ(b.text) && blocks[i + 1] && !endsWithQ(blocks[i + 1].text) && isPlainLine(blocks[i + 1])) pairs++; });
+      blocks.forEach((b, i) => { if (isQuestionLike(b.text) && blocks[i + 1] && !isQuestionLike(blocks[i + 1].text) && isPlainLine(blocks[i + 1])) pairs++; });
       qaMode = qCount > 0 && pairs >= Math.max(1, Math.ceil(qCount * 0.6));
     }
     const questions = [];
@@ -196,8 +203,9 @@
       if (ans) { addAnswer(normText(b.text.slice(ans[0].length))); continue; } // never shown inside the question
 
       let start;
-      if (manual || hasOl) start = manual ? isManualStart(b.text) : b.list === "ol";
-      else if (qaMode) start = endsWithQ(b.text);
+      if (manual) start = isManualStart(b.text) || (b.list === "ol" && (!cur || !!cur.answer || isQuestionLike(b.text)));
+      else if (hasOl) start = b.list === "ol";
+      else if (qaMode) start = isQuestionLike(b.text);
       else start = !(/^h[1-6]$/.test(b.tag || "") && blocks.length > 1) && !(cur && (OPTION_RE.test(b.text) || MARK_RE.test(b.text)));
 
       // "Question?" followed by a plain line (no "Javob:" prefix, no options): that line is the answer
@@ -212,7 +220,8 @@
         const num = (/\d{1,3}/.exec(b.text) || [])[0];
         if (manual) stripLeadingNumber(b.el);
         cur = { html: blockHtml(b), text: normText(b.el.textContent), num: manual && num ? Number(num) : undefined };
-        cur.asksQ = endsWithQ(cur.text) && !cur.answer;
+        const numbered = (manual && isManualStart(b.text)) || b.list === "ol";
+        cur.asksQ = !cur.answer && ((numbered && !/[:：]\s*$/.test(cur.text)) || isQuestionLike(cur.text));
       } else if (cur) {
         if (MARK_RE.test(b.text)) {
           // a correct option marked with "#" / "*": show it without the marker, remember it as the answer

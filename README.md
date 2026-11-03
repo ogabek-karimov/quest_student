@@ -21,7 +21,10 @@ Talabalar uchun savol kartalari. Ustoz Word fayldan savollarni yuklaydi, har bir
 
 ## To'g'ri javoblar (ixtiyoriy)
 Faylda javob bo'lsa, savol oynasida **"To'g'ri javobni ko'rish"** tugmasi chiqadi; javobi yo'q savollarda tugma bo'lmaydi.
-- **Savol va ostida javob:** `?` bilan tugagan savol ostidagi oddiy qator javob hisoblanadi (masalan `O'zbekiston qaysi qit'ada joylashgan?` → keyingi qatorda `Osiyo`). Savol raqamlangan bo'lsa ham, bo'lmasa ham ishlaydi.
+- **Savol va ostida javob:** savol ostidagi raqamsiz oddiy qator javob hisoblanadi (masalan `O'zbekiston qaysi qit'ada joylashgan?` → keyingi qatorda `Osiyo`). Savol deb quyidagilar tan olinadi:
+  - raqamli qatorlar — qo'lda yozilgan (`1.`, `2)`) yoki Word'ning avtomatik raqamlashi;
+  - `?` bilan tugagan qatorlar;
+  - so'roq so'zlari yoki topshiriq fe'llari bor qatorlar (`What/Who/How…`, `Name/Describe/Explain…`, `nima/qanday/qaysi/kim/qachon…`, `tushuntiring/sanab bering/ayting…`, `что/как/назовите…`).
 - **Word / PDF / txt:** savol ostida `Javob: ...`, `To'g'ri javob: ...` yoki `Answer: ...` qatori; yoki fayl oxirida `Javoblar:` bo'limi (`1-A, 2-C, 3-B`).
 - **HEMIS formati:** savollar `++++`, variantlar `====` bilan ajratilgan, to'g'ri variant oldida `#`.
 - **Excel:** `To'g'ri javob` / `Answer` ustuni (harf bo'lsa, mos variant matni ko'rsatiladi).
