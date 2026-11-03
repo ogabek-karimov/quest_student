@@ -16,6 +16,7 @@
     lang: "uz",
     teacher: "",
     perStudent: 1,      // how many questions each student answers
+    sound: true,        // play a tune when a student is graded
     questions: [],      // [{html, text}]
     questionsFile: "",
     students: [],       // [{id, name}]
@@ -87,6 +88,7 @@
     $$("[data-i18n-placeholder]").forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
     $$("[data-i18n-title]").forEach(el => { el.title = t(el.dataset.i18nTitle); });
     updateSpeakBtn();
+    updateSoundBtn();
     if ($("#answerBtn")) setAnswerBtn(!$("#qAnswer").hidden);
     $$(".lang-btn").forEach(b => b.classList.toggle("active", b.dataset.lang === state.lang));
     renderSetup();
@@ -352,6 +354,19 @@
 
   const EYE_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   const EYE_OFF_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+
+  const SOUND_ON_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>';
+  const SOUND_OFF_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';
+
+  function updateSoundBtn() {
+    const btn = $("#soundBtn");
+    if (!btn) return;
+    const on = state.sound !== false;
+    btn.innerHTML = on ? SOUND_ON_SVG : SOUND_OFF_SVG;
+    btn.classList.toggle("off", !on);
+    btn.setAttribute("aria-pressed", String(on));
+    btn.title = t(on ? "soundOn" : "soundOff");
+  }
 
   function setAnswerBtn(open) {
     const btn = $("#answerBtn");
@@ -684,7 +699,15 @@
     window.addEventListener("resize", updateScrollHint);
     applyTextScale();
     if (synth && synth.onvoiceschanged !== undefined) synth.onvoiceschanged = () => synth.getVoices();
-    $$(".grade-btn").forEach(b => b.addEventListener("click", () => gradeCurrent(b.dataset.grade)));
+    $$(".grade-btn").forEach(b => b.addEventListener("click", e => {
+      // burst from the click point (or the button centre when pressed from the keyboard)
+      const r = b.getBoundingClientRect();
+      const x = e.clientX || r.left + r.width / 2, y = e.clientY || r.top + r.height / 2;
+      window.Effects.burst(x, y, b.dataset.grade);
+      if (state.sound !== false) window.Effects.play(b.dataset.grade);
+      gradeCurrent(b.dataset.grade);
+    }));
+    $("#soundBtn").addEventListener("click", () => { state.sound = state.sound === false; updateSoundBtn(); save(); });
 
     $$(".modal").forEach(m => m.addEventListener("click", e => {
       if (e.target.closest("[data-close]")) closeModal("#" + m.id);

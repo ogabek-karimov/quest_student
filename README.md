@@ -7,7 +7,7 @@ Talabalar uchun savol kartalari. Ustoz Word fayldan savollarni yuklaydi, har bir
 - **Talabalar ro'yxati** (ixtiyoriy): Excel (`.xlsx`, `.xls`, `.csv`) yoki Word fayldan
 - **Start** bosilgandan keyin ekranda faqat kartalar qoladi; tanlangan karta qayta tanlanmaydi
 - **Aralashtirish** savollarni kartalar bo'yicha qaytadan aralashtiradi va hamma kartani yana ochiq qiladi
-- **Baholash**: A'lo / Qoniqarli / Yomon
+- **Baholash**: A'lo / Qoniqarli / Yomon — har biriga o'z ovozi va Telegram uslubidagi animatsiya; ovozni yuqori paneldagi 🔊 tugmasi bilan o'chirish mumkin
 - **🔊 Tinglash**: savolni ovoz chiqarib o'qiydi (ko'rishda muammosi bor talabalar uchun)
 - **№ raqam** maydoni: talaba aytgan raqamli kartani tez ochish
 - **Hisobot**: Excel faylga yuklab olinadi
@@ -23,6 +23,7 @@ Talabalar uchun savol kartalari. Ustoz Word fayldan savollarni yuklaydi, har bir
 Faylda javob bo'lsa, savol oynasida **"To'g'ri javobni ko'rish"** tugmasi chiqadi; javobi yo'q savollarda tugma bo'lmaydi.
 - **Savol va ostida javob:** savol ostidagi raqamsiz oddiy qator javob hisoblanadi (masalan `O'zbekiston qaysi qit'ada joylashgan?` → keyingi qatorda `Osiyo`). Savol deb quyidagilar tan olinadi:
   - raqamli qatorlar — qo'lda yozilgan (`1.`, `2)`) yoki Word'ning avtomatik raqamlashi;
+  - `Savol:`, `Q:`, `Question:`, `Вопрос:` bilan, yoki `•`, `-`, `▪`, `➤`, `✓` belgilari bilan boshlangan qatorlar, Word'ning nuqtali ro'yxati, butunlay **qalin** yozilgan qatorlar;
   - `?` bilan tugagan qatorlar;
   - so'roq so'zlari yoki topshiriq fe'llari bor qatorlar (`What/Who/How…`, `Name/Describe/Explain…`, `nima/qanday/qaysi/kim/qachon…`, `tushuntiring/sanab bering/ayting…`, `что/как/назовите…`).
 - **Word / PDF / txt:** savol ostida `Javob: ...`, `To'g'ri javob: ...` yoki `Answer: ...` qatori; yoki fayl oxirida `Javoblar:` bo'limi (`1-A, 2-C, 3-B`).

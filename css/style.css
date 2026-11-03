@@ -657,3 +657,20 @@ button { font-family: inherit; }
 }
 .q-scroll.more + .scroll-hint span { opacity: 1; }
 @keyframes hintBob { 50% { transform: translate(-50%, 5px); } }
+
+/* ---------- sound toggle ---------- */
+.sound-btn {
+  width: 42px; height: 42px; border-radius: 11px; display: grid; place-items: center; cursor: pointer;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--navy); box-shadow: var(--shadow-sm);
+  transition: transform 0.18s, box-shadow 0.25s, background 0.2s, color 0.2s;
+}
+.sound-btn:hover { transform: translateY(-2px); border-color: var(--navy); box-shadow: 0 8px 20px rgba(15, 31, 61, 0.14); }
+.sound-btn.off { color: var(--muted); background: var(--surface-2); }
+
+/* ---------- grading burst (Telegram-style reaction) ---------- */
+.fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 300; overflow: hidden; }
+.fx { position: absolute; left: 0; top: 0; line-height: 1; will-change: transform, opacity; user-select: none; }
+.fx-big { font-size: 64px; filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.25)); }
+.fx-emoji { filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.18)); }
+.fx-confetti i { display: block; width: 9px; height: 14px; border-radius: 2px; }
+.grade-btn:active { transform: scale(0.94); }

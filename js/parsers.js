@@ -163,7 +163,50 @@
   const isQuestionLike = t => !!t && (endsWithQ(t) || EN_Q_RE.test(t) || UZ_Q_RE.test(t) || UZ_TASK_RE.test(t) || RU_Q_RE.test(t) || (UZ_MI_RE.test(t) && t.split(/\s+/).length > 2));
   // a plain text line: not an option, not a marked option, not a list item / table / picture
   const isPlainLine = b => !!b.text && !b.list && b.tag !== "table" && !b.el.querySelector("img, table") &&
-    !OPTION_RE.test(b.text) && !MARK_RE.test(b.text) && !ANSWER_RE.test(b.text) && !SEPARATOR_RE.test(b.text);
+    !OPTION_RE.test(b.text) && !MARK_RE.test(b.text) && !ANSWER_RE.test(b.text) && !SEPARATOR_RE.test(b.text) &&
+    !BULLET_RE.test(b.text); // "- Paris" under a question is an option, not the answer
+
+  // ---------- question markers without a number ----------
+  // "Savol: ...", "Q: ...", "Question - ...", "Вопрос: ..." (a word that always means "question")
+  const Q_WORD_RE = /^\s*(?:savol|question|q|вопрос)\s*[:.)\-–—]\s*(?=\S)/i;
+  // bullet characters typed at the start of the line ("*" is not here: it marks a correct option)
+  const BULLET_RE = /^\s*[•●▪■◆►▶➤➢✓✔☑○◦‣∙·\-–—]\s+(?=\S)/;
+
+  // the whole paragraph is bold
+  function isBoldBlock(b) {
+    if (!b.text || /^h[1-6]$/.test(b.tag || "")) return false;
+    const bold = Array.from(b.el.querySelectorAll("strong, b")).map(x => x.textContent).join("");
+    return normText(bold) === b.text;
+  }
+
+  // remove "Savol:" / "•" from the first text node so only the question itself is shown
+  function stripMarker(el) {
+    const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (!node.nodeValue.trim()) continue;
+      node.nodeValue = node.nodeValue.replace(Q_WORD_RE, "").replace(BULLET_RE, "");
+      return;
+    }
+  }
+
+  // Decide which marker (if any) flags the questions of an unnumbered file.
+  // "Savol:"/"Q:" always does. Bullets, Word bullet lists and bold do only when the marked lines
+  // look at least as much like questions as the other lines (otherwise they mark options/answers).
+  function detectMarker(blocks) {
+    if (blocks.filter(b => Q_WORD_RE.test(b.text)).length >= 1) return b => Q_WORD_RE.test(b.text);
+    const ratio = list => (list.length ? list.filter(b => isQuestionLike(b.text.replace(BULLET_RE, ""))).length / list.length : 0);
+    const candidates = [
+      b => BULLET_RE.test(b.text) || b.list === "ul",
+      isBoldBlock
+    ];
+    for (const test of candidates) {
+      const marked = blocks.filter(test);
+      const other = blocks.filter(b => !test(b) && b.text && !/^h[1-6]$/.test(b.tag || ""));
+      if (marked.length >= 2 && (!other.length || ratio(marked) >= ratio(other))) return test;
+    }
+    return null;
+  }
 
   function groupQuestions(blocks) {
     if (blocks.filter(b => /^\s*\+{3,}\s*$/.test(b.text)).length >= 1 && blocks.some(b => /^\s*={3,}\s*$/.test(b.text))) {
@@ -175,7 +218,8 @@
     const hasOl = blocks.some(b => b.list === "ol");
     // Unnumbered "question? / answer" pairs: a line ending with "?" followed by a plain line.
     let qaMode = false;
-    if (!manual && !hasOl) {
+    const isMarker = !manual && !hasOl ? detectMarker(blocks) : null;
+    if (!manual && !hasOl && !isMarker) {
       const qCount = blocks.filter(b => isQuestionLike(b.text)).length;
       let pairs = 0;
       blocks.forEach((b, i) => { if (isQuestionLike(b.text) && blocks[i + 1] && !isQuestionLike(blocks[i + 1].text) && isPlainLine(blocks[i + 1])) pairs++; });
@@ -205,23 +249,26 @@
       let start;
       if (manual) start = isManualStart(b.text) || (b.list === "ol" && (!cur || !!cur.answer || isQuestionLike(b.text)));
       else if (hasOl) start = b.list === "ol";
+      else if (isMarker) start = isMarker(b);
       else if (qaMode) start = isQuestionLike(b.text);
-      else start = !(/^h[1-6]$/.test(b.tag || "") && blocks.length > 1) && !(cur && (OPTION_RE.test(b.text) || MARK_RE.test(b.text)));
+      else start = !(/^h[1-6]$/.test(b.tag || "") && blocks.length > 1) &&
+        !(cur && (OPTION_RE.test(b.text) || MARK_RE.test(b.text) || BULLET_RE.test(b.text) || b.list === "ul"));
 
       // "Question?" followed by a plain line (no "Javob:" prefix, no options): that line is the answer
       if (!start && cur && cur.asksQ && !cur.hasOptions && isPlainLine(b)) {
         addAnswer(normText(b.text));
         continue;
       }
-      if (!start && qaMode && !cur) continue; // title lines before the first question
+      if (!start && (qaMode || isMarker) && !cur) continue; // title lines before the first question
 
       if (start) {
         push();
         const num = (/\d{1,3}/.exec(b.text) || [])[0];
         if (manual) stripLeadingNumber(b.el);
+        if (isMarker) stripMarker(b.el);
         cur = { html: blockHtml(b), text: normText(b.el.textContent), num: manual && num ? Number(num) : undefined };
         const numbered = (manual && isManualStart(b.text)) || b.list === "ol";
-        cur.asksQ = !cur.answer && ((numbered && !/[:：]\s*$/.test(cur.text)) || isQuestionLike(cur.text));
+        cur.asksQ = !cur.answer && (((numbered || !!isMarker) && !/[:：]\s*$/.test(cur.text)) || isQuestionLike(cur.text));
       } else if (cur) {
         if (MARK_RE.test(b.text)) {
           // a correct option marked with "#" / "*": show it without the marker, remember it as the answer
